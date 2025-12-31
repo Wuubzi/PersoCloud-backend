@@ -38,6 +38,7 @@ CREATE TABLE personas
     numero_identificacion      VARCHAR(255),
     telefono                   VARCHAR(255),
     estado_votacion            BOOLEAN,
+    lugar_votacion             VARCHAR(255),
     id_barrio                  BIGINT,
     fecha_registro             TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
     numero_identificacion_hash VARCHAR(255)

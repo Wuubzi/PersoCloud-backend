@@ -47,7 +47,12 @@ public class PersonaController {
             @RequestParam(required = false) Boolean estado_votacion
     )
     {
-        return new ResponseEntity<>(personaService.getPersonas(page,size,search,estado_votacion), HttpStatus.OK);
+        return new ResponseEntity<>(personaService.getPersonasBarrio(idBarrio,page,size,search,estado_votacion), HttpStatus.OK);
+    }
+
+    @GetMapping("/persona")
+    public ResponseEntity<PersonaResponseDTO> getPersona(@RequestParam Long idPersona){
+        return new ResponseEntity<>(personaService.getPersona(idPersona), HttpStatus.OK);
     }
 
     @PostMapping("/crear")

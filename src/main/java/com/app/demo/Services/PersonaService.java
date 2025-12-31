@@ -87,6 +87,60 @@ public class PersonaService {
         return personas.map(this::mapToDTO);
     }
 
+    public Page<PersonaResponseDTO> getPersonasBarrio(Long idBarrio,int page, int size, String search, Boolean estado_votacion){
+        Pageable pageable = PageRequest.of(page, size);
+
+        Specification<Persona> spec = (root, query, cb) -> cb.conjunction();
+
+        spec = spec.and((root, query, cb) ->
+                cb.equal(root.get("idBarrio"), idBarrio)
+        );
+
+        if (search != null && !search.isBlank()) {
+            String like = "%" + search.toLowerCase() + "%";
+
+            spec = spec.and((root, query, cb) -> {
+                // Nombre completo concatenado
+                var nombreCompleto = cb.concat(
+                        cb.concat(root.get("primerNombre"), " "),
+                        cb.concat(
+                                cb.concat(root.get("segundoNombre"), " "),
+                                cb.concat(
+                                        cb.concat(root.get("primerApellido"), " "),
+                                        root.get("segundoApellido")
+                                )
+                        )
+                );
+                String searchHash = DigestUtils.sha256Hex(search);
+
+                return cb.or(
+                        cb.like(cb.lower(nombreCompleto), like),          // Nombres
+                        cb.equal(root.get("numeroIdentificacionHash"), searchHash), // Identificación cifrada (búsqueda exacta)
+                        cb.like(cb.lower(root.get("telefono")), like)     // Teléfono
+                );
+            });
+        }
+
+        if(estado_votacion != null){
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("estadoVotacion"), estado_votacion)
+            );
+        }
+
+        Page<Persona> personas = personaRepository.findAll(spec,pageable);
+
+        return personas.map(this::mapToDTO);
+    }
+
+
+
+    public PersonaResponseDTO getPersona(Long idPersona){
+        Optional<Persona> personaOptional = personaRepository.findById(idPersona);
+        if(personaOptional.isEmpty()){
+            throw new RuntimeException("La persona no existe");
+        }
+        return mapToDTO(personaOptional.get());
+    }
     public PersonaStatsResponseDTO getStats(Long idBarrio) {
         LocalDate hoy = LocalDate.now();
 
@@ -115,6 +169,7 @@ public class PersonaService {
         persona.setSegundoApellido(data.getSegundo_apellido());
         persona.setNumeroIdentificacion( AESUtils.encrypt(data.getNumero_identificacion()));
         persona.setNumeroIdentificacionHash(DigestUtils.sha256Hex(data.getNumero_identificacion()));
+        persona.setLugarVotacion(data.getLugar_votacion());
         persona.setEstadoVotacion(data.getEstado_votacion());
         persona.setTelefono(data.getTelefono());
         persona.setIdBarrio(data.getId_barrio());
@@ -166,6 +221,7 @@ public class PersonaService {
          throw new RuntimeException("No se pudo descifrar el numero de identificacion");
 
         }
+        persona.setLugar_votacion(personaData.getLugarVotacion());
         persona.setTelefono(personaData.getTelefono());
         persona.setEstado_votacion(personaData.getEstadoVotacion());
         Optional<Barrio> barrioOptional = barrioRepository.findById(personaData.getIdBarrio());

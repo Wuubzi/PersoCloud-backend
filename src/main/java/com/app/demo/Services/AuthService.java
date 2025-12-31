@@ -2,12 +2,10 @@ package com.app.demo.Services;
 
 import com.app.demo.DTO.Request.LoginRequestDTO;
 import com.app.demo.DTO.Response.AuthResponseDTO;
+import com.app.demo.Models.Barrio;
 import com.app.demo.Models.ModoSistema;
 import com.app.demo.Models.Usuario;
-import com.app.demo.Repositories.CredencialRepository;
-import com.app.demo.Repositories.ModoRepository;
-import com.app.demo.Repositories.RolRepository;
-import com.app.demo.Repositories.UsuarioRepository;
+import com.app.demo.Repositories.*;
 import com.app.demo.Utils.CustomUserDetails;
 import com.app.demo.Utils.DateFormat;
 import com.app.demo.Utils.JwtService;
@@ -28,6 +26,7 @@ public class AuthService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final RolRepository rolRepository;
+    private final BarrioRepository barrioRepository;
     private final CredencialRepository credencialRepository;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -39,6 +38,7 @@ public class AuthService {
                        RolRepository rolRepository,
                        PasswordEncoder passwordEncoder,
                        CredencialRepository credencialRepository,
+                       BarrioRepository barrioRepository,
                        JwtService jwtService,
                        AuthenticationManager authenticationManager,
                        ModoRepository modoRepository,
@@ -51,6 +51,7 @@ public class AuthService {
         this.modoRepository = modoRepository;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+        this.barrioRepository = barrioRepository;
     }
 
   public AuthResponseDTO login(LoginRequestDTO data, HttpServletRequest request) {
@@ -86,6 +87,10 @@ public class AuthService {
       Optional<Usuario> usuario = usuarioRepository.findUsuarioByCredencial_Correo(data.getCorreo());
       if (usuario.isEmpty()) {
           throw new EntityNotFoundException("Usuario no encontrado");
+      }
+      Optional<Barrio> barrioOptional = barrioRepository.findBarrioByIdLider(usuario.get().getIdUsuario());
+      if (barrioOptional.isEmpty()) {
+          throw new EntityNotFoundException("El lider no tiene barrio asignado");
       }
       boolean isPasswordMatch = passwordEncoder.matches(data.getContrasena(), usuario.get().getCredencial().getContrasena());
       if (!isPasswordMatch) {

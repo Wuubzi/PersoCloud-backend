@@ -1,6 +1,7 @@
 package com.app.demo.Repositories;
 
 import com.app.demo.Models.Persona;
+import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -21,5 +22,6 @@ public interface PersonaRepository extends JpaRepository<Persona, Long>, JpaSpec
             LocalDateTime inicio,
             LocalDateTime fin
     );
+    Page<Persona>findAllByIdBarrio();
 
 }

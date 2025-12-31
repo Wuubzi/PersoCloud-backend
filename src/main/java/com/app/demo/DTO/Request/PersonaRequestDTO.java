@@ -10,6 +10,7 @@ public class PersonaRequestDTO {
     private String segundo_apellido;
     private String numero_identificacion;
     private String telefono;
+    private String lugar_votacion;
     private Boolean estado_votacion;
     private Long id_barrio;
 }

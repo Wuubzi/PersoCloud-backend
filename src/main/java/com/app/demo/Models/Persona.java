@@ -28,6 +28,8 @@ public class Persona {
     private Boolean estadoVotacion;
     @Column(name = "id_barrio")
     private Long idBarrio;
+    @Column(name = "lugar_votacion")
+    private String lugarVotacion;
     @Column(name = "fecha_registro", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaRegistro = LocalDateTime.now();
     @Column(name = "numero_identificacion_hash")
