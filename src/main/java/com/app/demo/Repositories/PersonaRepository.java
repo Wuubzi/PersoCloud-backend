@@ -22,6 +22,5 @@ public interface PersonaRepository extends JpaRepository<Persona, Long>, JpaSpec
             LocalDateTime inicio,
             LocalDateTime fin
     );
-    Page<Persona>findAllByIdBarrio();
 
 }
