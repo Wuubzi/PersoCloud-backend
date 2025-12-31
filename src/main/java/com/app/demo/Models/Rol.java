@@ -3,6 +3,8 @@ package com.app.demo.Models;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
+
 @Entity
 @Table(name = "roles")
 @Data
@@ -13,6 +15,6 @@ public class Rol {
     private Long idRol;
     @Column(name = "nombre_rol")
     private String nombreRol;
-    @OneToOne(mappedBy = "rol", cascade = CascadeType.ALL)
-    private Usuario usuario;
+    @OneToMany(mappedBy = "rol")
+    private List<Usuario> usuario;
 }

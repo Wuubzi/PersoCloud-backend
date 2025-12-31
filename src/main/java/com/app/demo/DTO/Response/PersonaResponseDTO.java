@@ -9,5 +9,5 @@ public class PersonaResponseDTO {
     private String numero_identificacion;
     private String telefono;
     private Boolean estado_votacion;
-    private Long barrio;
+    private String barrio_nombre;
 }

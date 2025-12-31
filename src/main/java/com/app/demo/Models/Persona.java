@@ -3,6 +3,8 @@ package com.app.demo.Models;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "personas")
 @Data
@@ -26,4 +28,8 @@ public class Persona {
     private Boolean estadoVotacion;
     @Column(name = "id_barrio")
     private Long idBarrio;
+    @Column(name = "fecha_registro", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime fechaRegistro = LocalDateTime.now();
+    @Column(name = "numero_identificacion_hash")
+    private String numeroIdentificacionHash;
 }

@@ -2,9 +2,10 @@ package com.app.demo.Services;
 
 import com.app.demo.DTO.Request.LoginRequestDTO;
 import com.app.demo.DTO.Response.AuthResponseDTO;
-import com.app.demo.DTO.Response.ResponseDTO;
+import com.app.demo.Models.ModoSistema;
 import com.app.demo.Models.Usuario;
 import com.app.demo.Repositories.CredencialRepository;
+import com.app.demo.Repositories.ModoRepository;
 import com.app.demo.Repositories.RolRepository;
 import com.app.demo.Repositories.UsuarioRepository;
 import com.app.demo.Utils.CustomUserDetails;
@@ -12,6 +13,7 @@ import com.app.demo.Utils.DateFormat;
 import com.app.demo.Utils.JwtService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,6 +24,7 @@ import java.util.Optional;
 
 @Service
 public class AuthService {
+    private ModoRepository modoRepository;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final RolRepository rolRepository;
@@ -38,12 +41,14 @@ public class AuthService {
                        CredencialRepository credencialRepository,
                        JwtService jwtService,
                        AuthenticationManager authenticationManager,
+                       ModoRepository modoRepository,
                        DateFormat dateFormat) {
         this.usuarioRepository = usuarioRepository;
         this.rolRepository = rolRepository;
         this.passwordEncoder = passwordEncoder;
         this.credencialRepository = credencialRepository;
         this.dateFormat = dateFormat;
+        this.modoRepository = modoRepository;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
     }
@@ -68,6 +73,38 @@ public class AuthService {
       String token = jwtService.generateToken(userDetails);
         return getresponseDTO("Login exitoso", 200, request, token);
 
+  }
+
+  public  AuthResponseDTO loginLider(LoginRequestDTO data, HttpServletRequest request) {
+        Optional<ModoSistema> modoSistemaOptional = modoRepository.findById(1L);
+        if (modoSistemaOptional.isEmpty()) {
+            throw new RuntimeException("El modo no existe");
+        }
+        if (!modoSistemaOptional.get().getModo()) {
+            throw new RuntimeException("No Tienes Acceso al Sistema");
+        }
+      Optional<Usuario> usuario = usuarioRepository.findUsuarioByCredencial_Correo(data.getCorreo());
+      if (usuario.isEmpty()) {
+          throw new EntityNotFoundException("Usuario no encontrado");
+      }
+      boolean isPasswordMatch = passwordEncoder.matches(data.getContrasena(), usuario.get().getCredencial().getContrasena());
+      if (!isPasswordMatch) {
+          throw new RuntimeException("La contraseña es incorrecta");
+      }
+
+      authenticationManager.authenticate(
+              new UsernamePasswordAuthenticationToken(
+                      data.getCorreo(),
+                      data.getContrasena()
+              )
+      );
+      CustomUserDetails userDetails = new CustomUserDetails(usuario.get());
+      String token = jwtService.generateToken(userDetails);
+      return getresponseDTO("Login exitoso", 200, request, token);
+  }
+
+  public String hash(String password) {
+        return passwordEncoder.encode(password);
   }
 
   private AuthResponseDTO getresponseDTO(String message, int status, HttpServletRequest request, String token) {

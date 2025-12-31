@@ -42,7 +42,7 @@ public class CoordinadorService {
         int totalPersonas = personaRepository.findAll().size();
         int totalLideres = usuarioRepository.findAllByRol_NombreRol("LÍDER").size();
         StatsDashboardResponseDTO stats = new StatsDashboardResponseDTO();
-        stats.setTotalbarrios(totalBarrios);
+        stats.setTotalBarrios(totalBarrios);
         stats.setTotalPersonas(totalPersonas);
         stats.setTotalLideres(totalLideres);
         return stats;
@@ -53,9 +53,9 @@ public class CoordinadorService {
         int personasSinVotar = personaRepository.countAllByEstadoVotacion(false);
         int lideresActivos = usuarioRepository.findAllByRol_NombreRolAndEstado("LÍDER", true).size();
      SummaryResponseDTO summary = new SummaryResponseDTO();
-     summary.setTotalPersonasVotadas(personasVotadas);
+     summary.setTotalPersonasVotaron(personasVotadas);
      summary.setTotalPersonasSinVotar(personasSinVotar);
-     summary.setTotalLiderActivos(lideresActivos);
+     summary.setTotalLideresActivos(lideresActivos);
      return summary;
     }
 }

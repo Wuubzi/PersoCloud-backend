@@ -7,4 +7,6 @@ public class BarrioResponseDTO {
     private Long id_barrio;
     private String nombre;
     private String nombre_lider;
+    private Long id_lider;
+    private Boolean estado;
 }

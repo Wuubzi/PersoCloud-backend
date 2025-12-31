@@ -5,6 +5,6 @@ import lombok.Data;
 @Data
 public class SummaryResponseDTO {
     private int totalPersonasSinVotar;
-    private int totalPersonasVotadas;
-    private int totalLiderActivos;
+    private int totalPersonasVotaron;
+    private int totalLideresActivos;
 }

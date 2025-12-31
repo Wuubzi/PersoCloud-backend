@@ -1,17 +1,16 @@
 package com.app.demo.Controllers;
 
-import com.app.demo.DTO.Response.LiderResponseDTO;
-import com.app.demo.DTO.Response.PersonaResponseDTO;
+import com.app.demo.DTO.Request.PersonaRequestDTO;
+import com.app.demo.DTO.Response.*;
 import com.app.demo.Services.PersonaService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/personas")
@@ -24,16 +23,40 @@ public class PersonaController {
         this.personaService = personaService;
     }
 
-    @PreAuthorize("hasRole('COORDINADOR')")
+
+    @GetMapping("/stats")
+    public ResponseEntity<PersonaStatsResponseDTO> getStats(@RequestParam Long idBarrio){
+     return new ResponseEntity<>(personaService.getStats(idBarrio), HttpStatus.OK);
+    }
     @GetMapping("/personas")
-    public ResponseEntity<Page<PersonaResponseDTO>> getLideres(
+    public ResponseEntity<Page<PersonaResponseDTO>> getPersonas(
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
-            @RequestParam(required = false) String nombre,
-            @RequestParam(required = false) String numero_identificacion,
-            @RequestParam(required = false) String telefono,
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean estado_votacion
     ){
-        return new ResponseEntity<>(personaService.getPersonas(page,size,nombre,numero_identificacion,telefono,estado_votacion), HttpStatus.OK);
+        return new ResponseEntity<>(personaService.getPersonas(page,size,search,estado_votacion), HttpStatus.OK);
+    }
+
+    @GetMapping("/personasBarrio")
+    public ResponseEntity<Page<PersonaResponseDTO>> getPersonasBarrio(
+            @RequestParam Long idBarrio,
+            @RequestParam(defaultValue = "0", required = false) int page,
+            @RequestParam(defaultValue = "10", required = false) int size,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean estado_votacion
+    )
+    {
+        return new ResponseEntity<>(personaService.getPersonas(page,size,search,estado_votacion), HttpStatus.OK);
+    }
+
+    @PostMapping("/crear")
+    public ResponseEntity<ResponseDTO> crear(@RequestParam String correo, @Valid @RequestBody PersonaRequestDTO persona, HttpServletRequest request) throws Exception {
+      return new ResponseEntity<>(personaService.crear(correo, persona, request), HttpStatus.OK);
+    }
+
+    @PutMapping("/actualizar")
+    public ResponseEntity<ResponseDTO> actualizar(@RequestParam String correo, @RequestParam Long idPersona, @Valid @RequestBody PersonaRequestDTO persona, HttpServletRequest request) throws Exception {
+      return new ResponseEntity<>(personaService.actualizar(correo, idPersona, persona, request), HttpStatus.OK);
     }
 }

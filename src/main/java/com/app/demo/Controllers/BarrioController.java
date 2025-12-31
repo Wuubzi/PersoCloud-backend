@@ -23,14 +23,13 @@ public class BarrioController {
         this.barrioService = barrioService;
     }
 
-    @PreAuthorize("hasRole('COORDINADOR')")
+
     @GetMapping("/barrios")
     public ResponseEntity<Page<BarrioResponseDTO>> getBarrios(
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
-            @RequestParam(required = false) String nombre,
-            @RequestParam(required = false) String lider_nombre){
-        return new ResponseEntity<>(barrioService.getBarrios(page,size,nombre,lider_nombre), HttpStatus.OK);
+            @RequestParam(required = false) String search){
+        return new ResponseEntity<>(barrioService.getBarrios(page,size,search), HttpStatus.OK);
     }
 
     @PreAuthorize("hasRole('COORDINADOR')")
@@ -39,16 +38,27 @@ public class BarrioController {
         return new ResponseEntity<>(barrioService.getBarrio(idBarrio), HttpStatus.OK);
     }
 
+    @GetMapping("/getBarrioLider")
+    public ResponseEntity<BarrioResponseDTO> getBarrioLider(@RequestParam Long idLider){
+        return new ResponseEntity<>(barrioService.getBarrioLider(idLider), HttpStatus.OK);
+    }
+
     @PreAuthorize("hasRole('COORDINADOR')")
     @PostMapping("/crear")
-    public ResponseEntity<Object> crearBarrio(@Valid @RequestBody BarrioRequestDTO barrio, HttpServletRequest request){
-        return new ResponseEntity<>(barrioService.crearBarrio(barrio, request), HttpStatus.CREATED);
+    public ResponseEntity<Object> crearBarrio(@RequestParam String correoUsuario, @Valid @RequestBody BarrioRequestDTO barrio, HttpServletRequest request){
+        return new ResponseEntity<>(barrioService.crearBarrio(correoUsuario, barrio, request), HttpStatus.CREATED);
     }
 
     @PreAuthorize("hasRole('COORDINADOR')")
     @PutMapping("/actualizar")
-    public ResponseEntity<Object> actualizarBarrio(@RequestParam Long idUsuario, @Valid @RequestBody BarrioRequestDTO barrio, HttpServletRequest request){
-        return new ResponseEntity<>(barrioService.actualizarBarrio(idUsuario,barrio, request), HttpStatus.CREATED);
+    public ResponseEntity<Object> actualizarBarrio(@RequestParam String correoUsuario, @RequestParam Long idUsuario, @Valid @RequestBody BarrioRequestDTO barrio, HttpServletRequest request){
+        return new ResponseEntity<>(barrioService.actualizarBarrio(correoUsuario, idUsuario,barrio, request), HttpStatus.CREATED);
+    }
+
+    @PreAuthorize("hasRole('COORDINADOR')")
+    @PutMapping("/cambiarEstado")
+    public ResponseEntity<Object> changeState(@RequestParam  String correoUsuario, @RequestParam Long idBarrio, HttpServletRequest request){
+        return new ResponseEntity<>(barrioService.changeState(correoUsuario, idBarrio, request), HttpStatus.CREATED);
     }
 
 

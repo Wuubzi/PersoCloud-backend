@@ -15,7 +15,7 @@ public class Usuario {
     private String nombre;
     private String apellido;
     private Boolean estado;
-    @OneToOne
+    @ManyToOne
     @JoinColumn(name = "id_rol")
     private Rol rol;
     @OneToOne

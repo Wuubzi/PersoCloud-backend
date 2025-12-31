@@ -3,6 +3,7 @@ package com.app.demo.Services;
 import com.app.demo.DTO.Request.BarrioRequestDTO;
 import com.app.demo.DTO.Response.BarrioResponseDTO;
 import com.app.demo.DTO.Response.ResponseDTO;
+import com.app.demo.Models.Auditoria;
 import com.app.demo.Models.Barrio;
 import com.app.demo.Models.Usuario;
 import com.app.demo.Repositories.BarrioRepository;
@@ -24,30 +25,31 @@ public class BarrioService {
 
     private final BarrioRepository barrioRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AuditoriaService auditoriaService;
     private final DateFormat dateFormat;
 
     @Autowired
     public BarrioService(BarrioRepository barrioRepository,
                          UsuarioRepository usuarioRepository,
+                         AuditoriaService auditoriaService,
                          DateFormat dateFormat) {
         this.barrioRepository = barrioRepository;
         this.usuarioRepository = usuarioRepository;
+        this.auditoriaService = auditoriaService;
         this.dateFormat = dateFormat;
     }
 
-    public Page<BarrioResponseDTO> getBarrios(int page, int size, String nombre_barrio, String lider){
+    public Page<BarrioResponseDTO> getBarrios(int page, int size, String search){
         Pageable pageable = PageRequest.of(page, size);
 
         Specification<Barrio> spec = (root, query, cb) -> cb.conjunction();
 
-        if(nombre_barrio != null && !nombre_barrio.isBlank()){
+        if (search != null && !search.isBlank()) {
+            String like = "%" + search.toLowerCase() + "%";
             spec = spec.and((root, query, cb) ->
-                    cb.like(cb.lower(root.get("nombre")), "%" + nombre_barrio.toLowerCase() + "%")
-            );
-        }
-        if(lider != null && !lider.isBlank()){
-            spec = spec.and((root, query, cb) ->
-                    cb.equal(root.get("lider").get("nombre"), lider)
+                    cb.or(
+                            cb.like(cb.lower(root.get("nombreBarrio")), like)
+                    )
             );
         }
 
@@ -65,7 +67,16 @@ public class BarrioService {
         return mapToDTO(barrioOptional.get());
     }
 
-    public ResponseDTO crearBarrio(BarrioRequestDTO barrioRequestDTO, HttpServletRequest request){
+    public BarrioResponseDTO getBarrioLider(Long idLider) {
+        Optional<Barrio> barrioOptional = barrioRepository.findBarrioByIdLider(idLider);
+        if (barrioOptional.isEmpty()) {
+            throw new EntityNotFoundException("El barrio no existe");
+        }
+
+        return mapToDTO(barrioOptional.get());
+    }
+
+    public ResponseDTO crearBarrio(String correoUsuario,BarrioRequestDTO barrioRequestDTO, HttpServletRequest request){
         Optional<Barrio> barrioOptional = barrioRepository.findBarrioByNombreBarrio(barrioRequestDTO.getNombre_barrio());
         Optional<Usuario> liderOptional = usuarioRepository.findByIdUsuarioAndRol_NombreRol(barrioRequestDTO.getId_lider(), "LÍDER");
         if (barrioOptional.isPresent()) {
@@ -82,10 +93,11 @@ public class BarrioService {
         barrio.setIdLider(lider.getIdUsuario());
         barrio.setEstado(true);
         barrioRepository.save(barrio);
+        this.auditoriaService.saveAuditoria(correoUsuario, "Nuevo barrio añadido");
         return getresponseDTO("Barrio Creado Exitosamente", 200, request);
     }
 
-    public ResponseDTO actualizarBarrio(Long idBarrio, BarrioRequestDTO barrioRequestDTO, HttpServletRequest request){
+    public ResponseDTO actualizarBarrio(String correoUsuario, Long idBarrio, BarrioRequestDTO barrioRequestDTO, HttpServletRequest request){
         Optional<Barrio> barrioOptional = barrioRepository.findById(idBarrio);
         Optional<Usuario> liderOptional = usuarioRepository.findByIdUsuarioAndRol_NombreRol(barrioRequestDTO.getId_lider(), "LÍDER");
         if (barrioOptional.isEmpty()) {
@@ -99,11 +111,12 @@ public class BarrioService {
         Barrio barrio = barrioOptional.get();
         barrio.setNombreBarrio(barrioRequestDTO.getNombre_barrio());
         barrio.setIdLider(lider.getIdUsuario());
-        barrioRepository.save(barrio);
+        Barrio saved = barrioRepository.save(barrio);
+        this.auditoriaService.saveAuditoria(correoUsuario, "Barrio " + saved.getNombreBarrio() + " Actualizado");
         return getresponseDTO("Barrio Actualizado Exitosamente", 200, request);
     }
 
-    public ResponseDTO changeState(Long idBarrio, HttpServletRequest request){
+    public ResponseDTO changeState(String correoUsuario, Long idBarrio, HttpServletRequest request){
         Optional<Barrio> barrioOptional = barrioRepository.findById(idBarrio);
         if (barrioOptional.isEmpty()) {
             throw new EntityNotFoundException("El barrio no existe");
@@ -111,7 +124,8 @@ public class BarrioService {
 
         Barrio barrio = barrioOptional.get();
         barrio.setEstado(!barrio.getEstado());
-        barrioRepository.save(barrio);
+       Barrio saved =  barrioRepository.save(barrio);
+        this.auditoriaService.saveAuditoria(correoUsuario, "Estado del barrio " + saved.getNombreBarrio() + " Actualizado");
         return getresponseDTO("Estado del Barrio Actualizado Exitosamente", 200, request);
     }
 
@@ -121,6 +135,8 @@ public class BarrioService {
         barrio.setNombre(barrioData.getNombreBarrio());
         Optional<Usuario> lider = usuarioRepository.findByIdUsuarioAndRol_NombreRol(barrioData.getIdLider(), "LÍDER");
          barrio.setNombre_lider(lider.get().getNombre() + " " + lider.get().getApellido());
+         barrio.setId_lider(lider.get().getIdUsuario());
+         barrio.setEstado(barrioData.getEstado());
         return barrio;
 
 

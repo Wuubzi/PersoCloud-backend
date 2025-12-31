@@ -1,11 +1,14 @@
 package com.app.demo.Services;
 
+import com.app.demo.DTO.Request.LiderChangePassword;
 import com.app.demo.DTO.Request.LiderRequestDTO;
+import com.app.demo.DTO.Request.LiderUpdateRequestDTO;
 import com.app.demo.DTO.Response.LiderResponseDTO;
 import com.app.demo.DTO.Response.ResponseDTO;
 import com.app.demo.Models.Credencial;
 import com.app.demo.Models.Rol;
 import com.app.demo.Models.Usuario;
+import com.app.demo.Repositories.AuditoriaRepository;
 import com.app.demo.Repositories.CredencialRepository;
 import com.app.demo.Repositories.RolRepository;
 import com.app.demo.Repositories.UsuarioRepository;
@@ -26,6 +29,7 @@ import java.util.Optional;
 @Service
 public class LiderService {
 
+    private final AuditoriaService auditoriaService;
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
     private final DateFormat dateFormat;
@@ -36,16 +40,19 @@ public class LiderService {
     public LiderService(UsuarioRepository usuarioRepository,
                         DateFormat dateFormat,
                         PasswordEncoder passwordEncoder,
-                        RolRepository rolRepository, CredencialRepository credencialRepository) {
+                        RolRepository rolRepository,
+                        CredencialRepository credencialRepository,
+                        AuditoriaService auditoriaService) {
         this.usuarioRepository = usuarioRepository;
         this.dateFormat = dateFormat;
         this.passwordEncoder = passwordEncoder;
         this.rolRepository = rolRepository;
         this.credencialRepository = credencialRepository;
+        this.auditoriaService = auditoriaService;
     }
 
 
-    public Page<LiderResponseDTO> getLideres(int page, int size, String nombre, String apellido, String correo, Boolean estado){
+    public Page<LiderResponseDTO> getLideres(int page, int size, String search, Boolean estado){
         Pageable pageable = PageRequest.of(page, size);
 
         Specification<Usuario> spec = (root, query, cb) -> cb.conjunction();
@@ -54,23 +61,19 @@ public class LiderService {
                 cb.equal(root.get("rol").get("nombreRol"), "LÍDER")
         );
 
-        if (nombre != null && !nombre.isBlank()) {
+        if (search != null && !search.isBlank()) {
+            String like = "%" + search.toLowerCase() + "%";
             spec = spec.and((root, query, cb) ->
-                    cb.like(cb.lower(root.get("nombre")), "%" + nombre.toLowerCase() + "%")
+                    cb.or(
+                            cb.like(cb.lower(root.get("nombre")), like),
+                            cb.like(cb.lower(root.get("apellido")), like),
+                            cb.like(cb.lower(root.get("credencial").get("correo")), like)
+                    )
             );
         }
 
-        if (apellido != null && !apellido.isBlank()) {
-            spec = spec.and((root, query, cb) ->
-                    cb.like(cb.lower(root.get("apellido")), "%" + apellido.toLowerCase() + "%")
-            );
-        }
 
-        if(correo != null && !correo.isBlank()){
-            spec = spec.and((root, query, cb) ->
-                    cb.equal(root.get("credencial").get("correo"), correo)
-            );
-        }
+
         if(estado != null){
             spec = spec.and((root, query, cb) ->
                     cb.equal(root.get("estado"), estado)
@@ -97,7 +100,22 @@ public class LiderService {
         return lider;
     }
 
-    public ResponseDTO createLider(LiderRequestDTO lider, HttpServletRequest request){
+    public LiderResponseDTO getLiderCorreo(String correo){
+        Optional<Usuario> optionalUsuario = usuarioRepository.findByCredencial_CorreoAndRol_NombreRol(correo, "LÍDER");
+        if (optionalUsuario.isEmpty()) {
+            throw new EntityNotFoundException("El usuario no existe");
+        }
+
+        LiderResponseDTO lider = new LiderResponseDTO();
+        lider.setId_lider(optionalUsuario.get().getIdUsuario());
+        lider.setNombre(optionalUsuario.get().getNombre());
+        lider.setApellido(optionalUsuario.get().getApellido());
+        lider.setCorreo(optionalUsuario.get().getCredencial().getCorreo());
+        lider.setEstado(optionalUsuario.get().getEstado());
+        return lider;
+    }
+
+    public ResponseDTO createLider(String correoUsuario, LiderRequestDTO lider, HttpServletRequest request){
         Optional<Usuario> usuarioOptional = usuarioRepository.findUsuarioByCredencial_Correo(lider.getCorreo());
         Optional<Rol> rolOptional = rolRepository.findById(2L);
         if (rolOptional.isEmpty()) {
@@ -117,10 +135,13 @@ public class LiderService {
         usuario.setCredencial(savedCredencial);
         usuario.setRol(rolOptional.get());
         usuarioRepository.save(usuario);
+        this.auditoriaService.saveAuditoria(correoUsuario, "Nuevo Lider Agregado");
 
      return getresponseDTO("Líder Creado Exitosamente", 200, request);
     }
-    public ResponseDTO updateLider(Long idUsuario, LiderRequestDTO lider, HttpServletRequest request){
+
+
+    public ResponseDTO updateLider(String correoUsuario,Long idUsuario, LiderUpdateRequestDTO lider, HttpServletRequest request){
         Optional<Usuario> usuarioOptional = usuarioRepository.findByIdUsuarioAndRol_NombreRol(idUsuario, "LÍDER");
         if (usuarioOptional.isEmpty()) {
             throw new EntityNotFoundException("El usuario no existe");
@@ -134,19 +155,32 @@ public class LiderService {
         usuario.setNombre(lider.getNombre());
         usuario.setApellido(lider.getApellido());
         usuario.getCredencial().setCorreo(lider.getCorreo());
-        usuario.getCredencial().setContrasena(passwordEncoder.encode(lider.getContrasena()));
-        usuarioRepository.save(usuario);
+        Usuario saved = usuarioRepository.save(usuario);
+        this.auditoriaService.saveAuditoria(correoUsuario, "Líder " + saved.getNombre() + " Actualizado");
         return getresponseDTO("Líder Actualizado Exitosamente", 201, request);
     }
-    public ResponseDTO inactiveLider(Long idUsuario, HttpServletRequest request){
+
+    public ResponseDTO changePassword(String correoUsuario,Long idUsuario, LiderChangePassword data, HttpServletRequest request){
+        Optional<Usuario> usuarioOptional = usuarioRepository.findByIdUsuarioAndRol_NombreRol(idUsuario, "LÍDER");
+        if (usuarioOptional.isEmpty()) {
+            throw new EntityNotFoundException("El usuario no existe");
+        }
+        Usuario usuario = usuarioOptional.get();
+        usuario.getCredencial().setContrasena(passwordEncoder.encode(data.getContrasena()));
+        usuarioRepository.save(usuario);
+        this.auditoriaService.saveAuditoria(correoUsuario, "Contraseña de Líder " + usuario.getNombre() + " Actualizada");
+        return getresponseDTO("Contraseña cambiada Exitosamente", 200, request);
+    }
+    public ResponseDTO changeStatus(String correoUsuario,Long idUsuario, HttpServletRequest request){
        Optional<Usuario> usuarioOptional = usuarioRepository.findByIdUsuarioAndRol_NombreRol(idUsuario, "LÍDER");
         if (usuarioOptional.isEmpty()) {
             throw new EntityNotFoundException("El usuario no existe");
         }
         Usuario usuario = usuarioOptional.get();
-        usuario.setEstado(false);
+        usuario.setEstado(!usuario.getEstado());
         usuarioRepository.save(usuario);
-        return getresponseDTO("Líder Inactivado Exitosamente", 200, request);
+        this.auditoriaService.saveAuditoria(correoUsuario, "Estado del Líder " + usuario.getNombre() + " Actualizado");
+        return getresponseDTO("Estado cambiado Exitosamente", 200, request);
     }
 
     private LiderResponseDTO mapToDTO(Usuario usuario) {
