@@ -211,7 +211,10 @@ public class PersonaService {
     private PersonaResponseDTO mapToDTO(Persona personaData) {
         PersonaResponseDTO persona = new PersonaResponseDTO();
         persona.setId_persona(personaData.getIdPersona());
-        persona.setNombre(personaData.getPrimerNombre() + " " + personaData.getSegundoNombre() + " " + personaData.getPrimerApellido() + " " + personaData.getSegundoApellido());
+        persona.setPrimer_nombre(personaData.getPrimerNombre());
+        persona.setSegundo_nombre(personaData.getSegundoNombre());
+        persona.setPrimer_apellido(personaData.getPrimerApellido());
+        persona.setSegundo_apellido(personaData.getSegundoApellido());
         // Descifrar numeroIdentificacion antes de devolverlo
         try {
             String numeroDescifrado = AESUtils.decrypt(personaData.getNumeroIdentificacion());
