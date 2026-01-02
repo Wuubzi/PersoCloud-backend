@@ -14,4 +14,5 @@ public class PersonaResponseDTO {
     private Boolean estado_votacion;
     private String lugar_votacion;
     private String barrio_nombre;
+    private String lider_nombre;
 }

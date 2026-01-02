@@ -12,7 +12,7 @@ CREATE TABLE barrios
     id_barrio     SERIAL PRIMARY KEY NOT NULL,
     nombre_barrio VARCHAR(255),
     estado        BOOLEAN,
-    id_lider      BIGINT
+    id_usuario      BIGINT
 );
 
 CREATE TABLE credenciales
@@ -35,7 +35,7 @@ CREATE TABLE personas
     segundo_nombre             VARCHAR(255),
     primer_apellido            VARCHAR(255),
     segundo_apellido           VARCHAR(255),
-    numero_identificacion      VARCHAR(255),
+    numero_identificacion      VARCHAR(255) UNIQUE NOT NULL,
     telefono                   VARCHAR(255),
     estado_votacion            BOOLEAN,
     lugar_votacion             VARCHAR(255),

@@ -11,5 +11,6 @@ import java.util.Optional;
 public interface BarrioRepository extends JpaRepository<Barrio, Long>, JpaSpecificationExecutor<Barrio> {
 
     Optional<Barrio> findBarrioByNombreBarrio(String nombreBarrio);
-    Optional<Barrio> findBarrioByIdLider(Long idLider);
+    Optional<Barrio> findBarrioByUsuario_IdUsuarioAndIdBarrioNot(Long idUsuario, Long idBarrio);
+    Optional<Barrio> findBarrioByUsuario_IdUsuario(Long usuarioIdUsuario);
 }

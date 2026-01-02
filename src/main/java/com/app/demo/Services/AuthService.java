@@ -88,7 +88,7 @@ public class AuthService {
       if (usuario.isEmpty()) {
           throw new EntityNotFoundException("Usuario no encontrado");
       }
-      Optional<Barrio> barrioOptional = barrioRepository.findBarrioByIdLider(usuario.get().getIdUsuario());
+      Optional<Barrio> barrioOptional = barrioRepository.findBarrioByUsuario_IdUsuario(usuario.get().getIdUsuario());
       if (barrioOptional.isEmpty()) {
           throw new EntityNotFoundException("El lider no tiene barrio asignado");
       }

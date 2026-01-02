@@ -26,12 +26,13 @@ public class Persona {
     private String telefono;
     @Column(name = "estado_votacion")
     private Boolean estadoVotacion;
-    @Column(name = "id_barrio")
-    private Long idBarrio;
     @Column(name = "lugar_votacion")
     private String lugarVotacion;
     @Column(name = "fecha_registro", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaRegistro = LocalDateTime.now();
     @Column(name = "numero_identificacion_hash")
     private String numeroIdentificacionHash;
+    @ManyToOne
+    @JoinColumn(name = "id_barrio")
+    private Barrio barrio;
 }

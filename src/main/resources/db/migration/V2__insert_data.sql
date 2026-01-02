@@ -40,7 +40,7 @@ INSERT INTO usuarios(nombre,apellido,estado,id_rol,id_credencial) VALUES
                                                                       ('Jorge','Suarez',true,2,14),
                                                                       ('Paula','Diaz',true,2,15);
 
-INSERT INTO barrios(nombre_barrio, estado, id_lider) VALUES
+INSERT INTO barrios(nombre_barrio, estado, id_usuario) VALUES
                                                          ('Villa Cristina',true,2),
                                                          ('Villa San Francisco',true,3),
                                                          ('Villa San Juan',true,4),

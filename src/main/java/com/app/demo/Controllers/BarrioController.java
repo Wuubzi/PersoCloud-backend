@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/barrios")
 public class BarrioController {
@@ -36,6 +38,11 @@ public class BarrioController {
     @GetMapping("/barrio")
     public ResponseEntity<BarrioResponseDTO> getBarrio(@RequestParam Long idBarrio){
         return new ResponseEntity<>(barrioService.getBarrio(idBarrio), HttpStatus.OK);
+    }
+
+    @GetMapping("/barriosExport")
+    public ResponseEntity<List<BarrioResponseDTO>> getBarriosExport() {
+        return new ResponseEntity<>(barrioService.getBarriosExport(), HttpStatus.OK);
     }
 
     @GetMapping("/getBarrioLider")

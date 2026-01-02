@@ -38,6 +38,13 @@ public class LiderController {
     ){
         return new ResponseEntity<>(liderService.getLideres(page,size,search,estado), HttpStatus.OK);
     }
+
+    @GetMapping("/lideresExport")
+    public ResponseEntity<List<LiderResponseDTO>> getLideresExport(){
+        return new ResponseEntity<>(liderService.getLiderExport(), HttpStatus.OK);
+    }
+
+
     @GetMapping("/lider")
     public ResponseEntity<LiderResponseDTO> getLider(@RequestParam Long idUsuario){
         return new ResponseEntity<>(liderService.getLider(idUsuario), HttpStatus.OK);

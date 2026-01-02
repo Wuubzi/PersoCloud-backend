@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/personas")
 public class PersonaController {
@@ -33,9 +35,10 @@ public class PersonaController {
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long barrio,
             @RequestParam(required = false) Boolean estado_votacion
     ){
-        return new ResponseEntity<>(personaService.getPersonas(page,size,search,estado_votacion), HttpStatus.OK);
+        return new ResponseEntity<>(personaService.getPersonas(page,size,search,estado_votacion, barrio), HttpStatus.OK);
     }
 
     @GetMapping("/personasBarrio")
@@ -48,6 +51,11 @@ public class PersonaController {
     )
     {
         return new ResponseEntity<>(personaService.getPersonasBarrio(idBarrio,page,size,search,estado_votacion), HttpStatus.OK);
+    }
+
+    @GetMapping("/personasExport")
+    public ResponseEntity<List<PersonaResponseDTO>> getPersonasExport(){
+        return new ResponseEntity<>(personaService.getPersonasExport(), HttpStatus.OK);
     }
 
     @GetMapping("/persona")

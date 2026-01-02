@@ -15,4 +15,5 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long>, JpaSpec
     List<Usuario> findAllByRol_NombreRolAndEstado(String rol, Boolean estado);
     Optional<Usuario> findByIdUsuarioAndRol_NombreRol(Long id, String rol);
     Optional<Usuario> findByCredencial_CorreoAndRol_NombreRol(String correo, String rol);
+    Optional<Usuario> findUsuarioByBarrio_IdBarrio(Long idBarrio);
 }

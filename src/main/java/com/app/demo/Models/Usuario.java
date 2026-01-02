@@ -22,4 +22,7 @@ public class Usuario {
     @JoinColumn(name = "id_credencial")
     private Credencial credencial;
 
+    @OneToOne(mappedBy = "usuario")
+    private Barrio barrio;
+
 }

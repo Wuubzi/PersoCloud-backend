@@ -3,6 +3,8 @@ package com.app.demo.Models;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
+
 @Entity
 @Table(name = "barrios")
 @Data
@@ -15,6 +17,9 @@ public class Barrio {
     private String nombreBarrio;
     @Column(name = "estado")
     private Boolean estado;
-    @Column(name = "id_lider")
-    private Long idLider;
+    @OneToOne
+    @JoinColumn(name = "id_usuario")
+    private Usuario usuario;
+    @OneToMany(mappedBy = "barrio")
+    private List<Persona> persona;
 }

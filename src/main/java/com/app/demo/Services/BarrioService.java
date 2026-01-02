@@ -10,6 +10,9 @@ import com.app.demo.Repositories.BarrioRepository;
 import com.app.demo.Repositories.UsuarioRepository;
 import com.app.demo.Utils.DateFormat;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,6 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -39,23 +43,43 @@ public class BarrioService {
         this.dateFormat = dateFormat;
     }
 
-    public Page<BarrioResponseDTO> getBarrios(int page, int size, String search){
+    public Page<BarrioResponseDTO> getBarrios(int page, int size, String search) {
+
         Pageable pageable = PageRequest.of(page, size);
 
         Specification<Barrio> spec = (root, query, cb) -> cb.conjunction();
-
         if (search != null && !search.isBlank()) {
             String like = "%" + search.toLowerCase() + "%";
-            spec = spec.and((root, query, cb) ->
-                    cb.or(
-                            cb.like(cb.lower(root.get("nombreBarrio")), like)
-                    )
-            );
+
+            spec = spec.and((root, query, cb) -> {
+
+                // JOIN con usuario
+                Join<Barrio, Usuario> usuarioJoin = root.join("usuario", JoinType.LEFT);
+
+                var nombreCompleto = cb.concat(
+                        cb.concat(
+                                cb.lower(usuarioJoin.get("nombre")),
+                                " "
+                        ),
+                        cb.lower(usuarioJoin.get("apellido"))
+                );
+                return cb.or(
+                        cb.like(cb.lower(root.get("nombreBarrio")), like),
+                        cb.like(cb.lower(usuarioJoin.get("nombre")), like),
+                        cb.like(nombreCompleto, like),
+                        cb.like(cb.lower(usuarioJoin.get("apellido")), like)
+                );
+            });
         }
 
-        Page<Barrio> barrios = barrioRepository.findAll(spec,pageable);
+        Page<Barrio> barrios = barrioRepository.findAll(spec, pageable);
 
         return barrios.map(this::mapToDTO);
+    }
+
+
+    public List<BarrioResponseDTO> getBarriosExport(){
+        return barrioRepository.findAll().stream().map(this::mapToDTO).toList();
     }
 
     public BarrioResponseDTO getBarrio(Long idBarrio){
@@ -68,7 +92,7 @@ public class BarrioService {
     }
 
     public BarrioResponseDTO getBarrioLider(Long idLider) {
-        Optional<Barrio> barrioOptional = barrioRepository.findBarrioByIdLider(idLider);
+        Optional<Barrio> barrioOptional = barrioRepository.findBarrioByUsuario_IdUsuario(idLider);
         if (barrioOptional.isEmpty()) {
             throw new EntityNotFoundException("El barrio no existe");
         }
@@ -79,6 +103,10 @@ public class BarrioService {
     public ResponseDTO crearBarrio(String correoUsuario,BarrioRequestDTO barrioRequestDTO, HttpServletRequest request){
         Optional<Barrio> barrioOptional = barrioRepository.findBarrioByNombreBarrio(barrioRequestDTO.getNombre_barrio());
         Optional<Usuario> liderOptional = usuarioRepository.findByIdUsuarioAndRol_NombreRol(barrioRequestDTO.getId_lider(), "LÍDER");
+        Optional<Barrio> usuarioOptional = barrioRepository.findBarrioByUsuario_IdUsuario(barrioRequestDTO.getId_lider());
+        if (usuarioOptional.isPresent()) {
+            throw new RuntimeException("El usuario ya tiene un barrio asignado");
+        }
         if (barrioOptional.isPresent()) {
             throw new RuntimeException("El barrio ya existe");
         }
@@ -90,7 +118,7 @@ public class BarrioService {
 
         Barrio barrio = new Barrio();
         barrio.setNombreBarrio(barrioRequestDTO.getNombre_barrio());
-        barrio.setIdLider(lider.getIdUsuario());
+        barrio.setUsuario(lider);
         barrio.setEstado(true);
         barrioRepository.save(barrio);
         this.auditoriaService.saveAuditoria(correoUsuario, "Nuevo barrio añadido");
@@ -99,9 +127,13 @@ public class BarrioService {
 
     public ResponseDTO actualizarBarrio(String correoUsuario, Long idBarrio, BarrioRequestDTO barrioRequestDTO, HttpServletRequest request){
         Optional<Barrio> barrioOptional = barrioRepository.findById(idBarrio);
+        Optional<Barrio> usuarioOptional = barrioRepository.findBarrioByUsuario_IdUsuarioAndIdBarrioNot(barrioRequestDTO.getId_lider(), idBarrio);
         Optional<Usuario> liderOptional = usuarioRepository.findByIdUsuarioAndRol_NombreRol(barrioRequestDTO.getId_lider(), "LÍDER");
         if (barrioOptional.isEmpty()) {
             throw new EntityNotFoundException("El barrio no existe");
+        }
+        if (usuarioOptional.isPresent()) {
+            throw new RuntimeException("El usuario ya tiene un barrio asignado");
         }
         if (liderOptional.isEmpty()) {
             throw new EntityNotFoundException("El lider no existe");
@@ -110,7 +142,7 @@ public class BarrioService {
         Usuario lider = liderOptional.get();
         Barrio barrio = barrioOptional.get();
         barrio.setNombreBarrio(barrioRequestDTO.getNombre_barrio());
-        barrio.setIdLider(lider.getIdUsuario());
+        barrio.setUsuario(lider);
         Barrio saved = barrioRepository.save(barrio);
         this.auditoriaService.saveAuditoria(correoUsuario, "Barrio " + saved.getNombreBarrio() + " Actualizado");
         return getresponseDTO("Barrio Actualizado Exitosamente", 200, request);
@@ -133,7 +165,7 @@ public class BarrioService {
         BarrioResponseDTO barrio = new BarrioResponseDTO();
         barrio.setId_barrio(barrioData.getIdBarrio());
         barrio.setNombre(barrioData.getNombreBarrio());
-        Optional<Usuario> lider = usuarioRepository.findByIdUsuarioAndRol_NombreRol(barrioData.getIdLider(), "LÍDER");
+        Optional<Usuario> lider = usuarioRepository.findByIdUsuarioAndRol_NombreRol(barrioData.getUsuario().getIdUsuario(), "LÍDER");
          barrio.setNombre_lider(lider.get().getNombre() + " " + lider.get().getApellido());
          barrio.setId_lider(lider.get().getIdUsuario());
          barrio.setEstado(barrioData.getEstado());

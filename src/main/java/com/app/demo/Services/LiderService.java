@@ -24,6 +24,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -85,6 +86,9 @@ public class LiderService {
         return usuarios.map(this::mapToDTO);
     }
 
+    public List<LiderResponseDTO> getLiderExport() {
+        return usuarioRepository.findAllByRol_NombreRol("LÍDER").stream().map(this::mapToDTO).toList();
+    }
     public LiderResponseDTO getLider(Long idUsuario){
         Optional<Usuario> optionalUsuario = usuarioRepository.findByIdUsuarioAndRol_NombreRol(idUsuario, "LÍDER");
         if (optionalUsuario.isEmpty()) {
