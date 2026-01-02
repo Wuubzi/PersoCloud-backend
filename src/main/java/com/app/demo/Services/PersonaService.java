@@ -259,6 +259,7 @@ public class PersonaService {
         persona.setPrimerApellido(data.getPrimer_apellido());
         persona.setSegundoApellido(data.getSegundo_apellido());
         persona.setNumeroIdentificacion( AESUtils.encrypt(data.getNumero_identificacion()));
+        persona.setLugarVotacion(data.getLugar_votacion());
         persona.setEstadoVotacion(data.getEstado_votacion());
         persona.setTelefono(data.getTelefono());
         personaRepository.save(persona);
