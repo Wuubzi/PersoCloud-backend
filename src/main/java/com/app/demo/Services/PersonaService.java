@@ -202,7 +202,7 @@ public class PersonaService {
         int totalPersonas = personaRepository.countAllByBarrio_IdBarrio(idBarrio);
         int totalVotaron = personaRepository.countAllByBarrio_IdBarrioAndEstadoVotacion(idBarrio, true);
         int totalSinVotar = personaRepository.countAllByBarrio_IdBarrioAndEstadoVotacion(idBarrio, false);
-        int registradosHoy = personaRepository.findByFechaRegistroBetween(inicio,fin).size();
+        int registradosHoy = personaRepository.findByFechaRegistroBetweenAndBarrio_IdBarrio(inicio,fin, idBarrio).size();
         double progresoVotacion = (double) totalVotaron / totalPersonas * 100;
         PersonaStatsResponseDTO stats = new PersonaStatsResponseDTO();
         stats.setTotalPersonas(totalPersonas);

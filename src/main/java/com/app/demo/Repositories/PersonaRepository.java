@@ -20,9 +20,10 @@ public interface PersonaRepository extends JpaRepository<Persona, Long>, JpaSpec
     int countAllByBarrio_IdBarrioAndEstadoVotacion(Long idBarrio, Boolean estadoVotacion);
     Optional<Persona> findByNumeroIdentificacionHash(String numeroIdentificacionHash);
     Optional<Persona> findByNumeroIdentificacionHashAndIdPersonaNot(String numeroIdentificacionHash, Long idPersona);
-    List<Persona> findByFechaRegistroBetween(
+    List<Persona> findByFechaRegistroBetweenAndBarrio_IdBarrio(
             LocalDateTime inicio,
-            LocalDateTime fin
+            LocalDateTime fin,
+            Long idBarrio
     );
 
 }
