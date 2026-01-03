@@ -124,8 +124,11 @@ public class PersonaService {
 
         Specification<Persona> spec = (root, query, cb) -> cb.conjunction();
 
-        spec = spec.and((root, query, cb) ->
-                cb.equal(root.get("idBarrio"), idBarrio)
+
+        spec = spec.and((root, query, cb) -> {
+                 Join<Persona, Barrio> barrioJoin = root.join("barrio", JoinType.INNER);
+                 return cb.equal(barrioJoin.get("idBarrio"), idBarrio);
+                }
         );
 
         if (search != null && !search.isBlank()) {
