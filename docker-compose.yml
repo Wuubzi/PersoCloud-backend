@@ -30,6 +30,8 @@ services:
       STORAGE_IMAGES: "/var/certificados"
     depends_on:
       - postgres
-
     volumes:
       - /var/certificados:/var/certificados
+
+volumes:
+  postgres_data:
