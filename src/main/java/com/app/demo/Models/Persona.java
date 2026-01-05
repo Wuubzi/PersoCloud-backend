@@ -30,6 +30,9 @@ public class Persona {
     private String lugarVotacion;
     @Column(name = "fecha_registro", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime fechaRegistro = LocalDateTime.now();
+    @Column(name = "imagen_url")
+    private String urlImagen;
+    private Short year;
     @Column(name = "numero_identificacion_hash")
     private String numeroIdentificacionHash;
     @ManyToOne

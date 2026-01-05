@@ -24,9 +24,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +37,7 @@ public class PersonaService {
     private final PersonaRepository personaRepository;
     private final BarrioRepository barrioRepository;
     private final UsuarioRepository usuarioRepository;
+    private final ImagesService imagesService;
     private final AuditoriaService auditoriaService;
     private final DateFormat dateFormat;
 
@@ -43,24 +46,31 @@ public class PersonaService {
                           AuditoriaService auditoriaService,
                           UsuarioRepository usuarioRepository,
                           BarrioRepository barrioRepository,
+                          ImagesService imagesService,
                           DateFormat dateFormat) {
         this.personaRepository = personaRepository;
         this.barrioRepository = barrioRepository;
         this.dateFormat = dateFormat;
+        this.imagesService = imagesService;
         this.usuarioRepository = usuarioRepository;
         this.auditoriaService = auditoriaService;
     }
 
 
-    public Page<PersonaResponseDTO> getPersonas(int page, int size, String search, Boolean estado_votacion, Long idBarrio){
+    public Page<PersonaResponseDTO> getPersonas(int page, int size, String search, Short year, Boolean estado_votacion, Long idBarrio){
         Pageable pageable = PageRequest.of(page, size);
 
         Specification<Persona> spec = (root, query, cb) -> cb.conjunction();
 
+        if (year != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("year"), year)
+            );
+        }
+
 
         if (search != null && !search.isBlank()) {
             String like = "%" + search.toLowerCase() + "%";
-
             spec = spec.and((root, query, cb) -> {
                 // Nombre completo concatenado
                 var nombreCompleto = cb.concat(
@@ -131,6 +141,12 @@ public class PersonaService {
                 }
         );
 
+        Short currentYear = (short) Year.now().getValue();
+        spec = spec.and((root, query, cb) ->
+                cb.equal(root.get("year"), currentYear)
+        );
+
+
         if (search != null && !search.isBlank()) {
             String like = "%" + search.toLowerCase() + "%";
 
@@ -185,6 +201,10 @@ public class PersonaService {
         return personaRepository.findAll().stream().map(this::mapToDTO).toList();
     }
 
+    public List<PersonaResponseDTO> getPersonasBarrioExport(Long idBarrio) {
+        return personaRepository.findAllByBarrio_IdBarrio(idBarrio).stream().map(this::mapToDTO).toList();
+    }
+
 
 
     public PersonaResponseDTO getPersona(Long idPersona){
@@ -196,12 +216,13 @@ public class PersonaService {
     }
     public PersonaStatsResponseDTO getStats(Long idBarrio) {
         LocalDate hoy = LocalDate.now();
+        Short year = (short) Year.now().getValue();
 
-        LocalDateTime inicio = hoy.atStartOfDay();
+        LocalDateTime  inicio = hoy.atStartOfDay();
         LocalDateTime fin = hoy.atTime(23, 59, 59, 999_999_999);
-        int totalPersonas = personaRepository.countAllByBarrio_IdBarrio(idBarrio);
-        int totalVotaron = personaRepository.countAllByBarrio_IdBarrioAndEstadoVotacion(idBarrio, true);
-        int totalSinVotar = personaRepository.countAllByBarrio_IdBarrioAndEstadoVotacion(idBarrio, false);
+        int totalPersonas = personaRepository.countAllByBarrio_IdBarrioAndYear(idBarrio, year );
+        int totalVotaron = personaRepository.countAllByBarrio_IdBarrioAndEstadoVotacionAndYear(idBarrio, true, year);
+        int totalSinVotar = personaRepository.countAllByBarrio_IdBarrioAndEstadoVotacionAndYear(idBarrio, false, year);
         int registradosHoy = personaRepository.findByFechaRegistroBetweenAndBarrio_IdBarrio(inicio,fin, idBarrio).size();
         double progresoVotacion = (double) totalVotaron / totalPersonas * 100;
         PersonaStatsResponseDTO stats = new PersonaStatsResponseDTO();
@@ -213,16 +234,20 @@ public class PersonaService {
         return stats;
     }
 
-    public ResponseDTO crear(String correo, PersonaRequestDTO data, HttpServletRequest request) throws Exception {
+    public ResponseDTO crear(String correo, PersonaRequestDTO data, MultipartFile image, HttpServletRequest request) throws Exception {
 
         Optional<Barrio> barrioOptional = barrioRepository.findById(data.getId_barrio());
         if(barrioOptional.isEmpty()){
             throw new RuntimeException("El barrio no existe");
         }
+        Short anioActual = (short) Year.now().getValue();
+
         String numeroIdentificacionHash = DigestUtils.sha256Hex(data.getNumero_identificacion());
-        Optional<Persona> personaExistente = personaRepository.findByNumeroIdentificacionHash(numeroIdentificacionHash);
+        Optional<Persona> personaExistente = personaRepository.findByNumeroIdentificacionHashAndYear(numeroIdentificacionHash, anioActual);
         if(personaExistente.isPresent()){
-            throw new RuntimeException("Ya existe una persona con este número de identificación");
+           Persona persona = personaExistente.get();
+            auditoriaService.saveAuditoria(correo, "Se intento registrar una persona ya registrada en el barrio " + persona.getBarrio().getNombreBarrio() + " del Lider " + persona.getBarrio().getUsuario().getNombre() + "");
+            throw new RuntimeException("Esta persona ya esta registrada en el sistema");
         }
 
         Persona persona = new Persona();
@@ -235,21 +260,25 @@ public class PersonaService {
         persona.setLugarVotacion(data.getLugar_votacion());
         persona.setEstadoVotacion(data.getEstado_votacion());
         persona.setTelefono(data.getTelefono());
+        persona.setYear(anioActual);
         persona.setBarrio(barrioOptional.get());
+        String imagen_url = imagesService.guardarImagen(image);
+        persona.setUrlImagen(imagen_url);
         personaRepository.save(persona);
         auditoriaService.saveAuditoria(correo, "Se ha añadido una nueva persona al sistema");
 
         return getresponseDTO("Persona creada correctamente", 201, request);
     }
 
-    public ResponseDTO actualizar(String correo, Long idPersona, PersonaRequestDTO data, HttpServletRequest request) throws Exception {
+    public ResponseDTO actualizar(String correo, Long idPersona, PersonaRequestDTO data, MultipartFile image, HttpServletRequest request) throws Exception {
         Optional<Persona> personaOptional = personaRepository.findById(idPersona);
         if(personaOptional.isEmpty()){
             throw new RuntimeException("La persona no existe");
         }
         String numeroIdentificacionHash = DigestUtils.sha256Hex(data.getNumero_identificacion());
-        Optional<Persona> personaExistente = personaRepository.findByNumeroIdentificacionHashAndIdPersonaNot(
+        Optional<Persona> personaExistente = personaRepository.findByNumeroIdentificacionHashAndYearAndIdPersonaNot(
                 numeroIdentificacionHash,
+                personaOptional.get().getYear(),
                 idPersona
         );
         if (personaExistente.isPresent()) {
@@ -259,11 +288,15 @@ public class PersonaService {
         Persona persona = personaOptional.get();
         persona.setPrimerNombre(data.getPrimer_nombre());
         persona.setSegundoNombre(data.getSegundo_nombre());
-        persona.setPrimerApellido(data.getPrimer_apellido());
+        persona.setPrimerApellido(data.getPrimer_apellido())    ;
         persona.setSegundoApellido(data.getSegundo_apellido());
         persona.setNumeroIdentificacion( AESUtils.encrypt(data.getNumero_identificacion()));
         persona.setLugarVotacion(data.getLugar_votacion());
         persona.setEstadoVotacion(data.getEstado_votacion());
+        if (image != null) {
+            imagesService.eliminarImagen(persona.getUrlImagen());
+            persona.setUrlImagen(imagesService.guardarImagen(image));
+        }
         persona.setTelefono(data.getTelefono());
         personaRepository.save(persona);
         auditoriaService.saveAuditoria(correo, "Se ha actualizado una persona del sistema");
@@ -307,6 +340,12 @@ public class PersonaService {
         persona.setBarrio_nombre(barrioOptional.get().getNombreBarrio());
         Optional<Usuario> liderOptional = usuarioRepository.findUsuarioByBarrio_IdBarrio(barrioOptional.get().getIdBarrio());
         persona.setLider_nombre(barrioOptional.get().getUsuario().getNombre() + " " + barrioOptional.get().getUsuario().getApellido());
+        persona.setImagen_url(
+                personaData.getUrlImagen() != null
+                        ? "/api/v1/images/" + personaData.getUrlImagen()
+                        : null
+        );
+        persona.setYear(personaData.getYear());
         return persona;
     }
 }

@@ -41,6 +41,8 @@ CREATE TABLE personas
     lugar_votacion             VARCHAR(255),
     id_barrio                  BIGINT,
     fecha_registro             TIMESTAMP WITHOUT TIME ZONE DEFAULT NOW(),
+    imagen_url                 VARCHAR(255),
+    year                       SMALLINT NOT NULL,
     numero_identificacion_hash VARCHAR(255)
 );
 
