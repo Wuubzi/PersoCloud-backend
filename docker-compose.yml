@@ -27,9 +27,9 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       JWT_SECRET_KEY: "E4xEHxWa6AUHmbfvQxQiBM1oECP07drQ7/WdIyCWgxE="
-      STORAGE_IMAGES: "/var/certificados"   
+      STORAGE_IMAGES: "/var/certificados"
     depends_on:
       - postgres
 
-volumes:
-  postgres_data:
+    volumes:
+      - /var/certificados:/var/certificados
