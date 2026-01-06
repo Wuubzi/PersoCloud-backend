@@ -5,9 +5,7 @@ import com.app.demo.DTO.Response.LiderResponseDTO;
 import com.app.demo.DTO.Response.PersonaResponseDTO;
 import com.app.demo.DTO.Response.PersonaStatsResponseDTO;
 import com.app.demo.DTO.Response.ResponseDTO;
-import com.app.demo.Models.Barrio;
-import com.app.demo.Models.Persona;
-import com.app.demo.Models.Usuario;
+import com.app.demo.Models.*;
 import com.app.demo.Repositories.BarrioRepository;
 import com.app.demo.Repositories.PersonaRepository;
 import com.app.demo.Repositories.UsuarioRepository;
@@ -57,7 +55,7 @@ public class PersonaService {
     }
 
 
-    public Page<PersonaResponseDTO> getPersonas(int page, int size, String search, Short year, Boolean estado_votacion, Long idBarrio){
+    public Page<PersonaResponseDTO> getPersonas(int page, int size, String search, Short year, Boolean estado_votacion, Long idBarrio, String departamento, Long idCiudad){
         Pageable pageable = PageRequest.of(page, size);
 
         Specification<Persona> spec = (root, query, cb) -> cb.conjunction();
@@ -114,6 +112,41 @@ public class PersonaService {
             spec = spec.and((root, query, cb) -> {
                         Join<Persona, Barrio> barrioJoin = root.join("barrio", JoinType.LEFT);
                         return cb.equal(barrioJoin.get("idBarrio"), idBarrio);
+                    }
+            );
+        }
+
+        if (departamento != null && !departamento.isBlank()) {
+            String like = "%" + departamento.toLowerCase() + "%";
+
+            spec = spec.and((root, query, cb) -> {
+
+                Join<Persona, Barrio> barrioJoin =
+                        root.join("barrio", JoinType.LEFT);
+
+                Join<Barrio, Ciudad> ciudadJoin =
+                        barrioJoin.join("ciudad", JoinType.LEFT);
+
+                Join<Ciudad, Departamento> departamentoJoin =
+                        ciudadJoin.join("departamento", JoinType.LEFT);
+
+                return cb.like(
+                        cb.lower(departamentoJoin.get("nombreDepartamento")),
+                        like
+                );
+            });
+        }
+
+
+        if (idCiudad != null) {
+            spec = spec.and((root, query, cb) -> {
+                Join<Persona, Barrio> barrioJoin =
+                        root.join("barrio", JoinType.LEFT);
+
+                Join<Barrio, Ciudad> ciudadJoin =
+                        barrioJoin.join("ciudad", JoinType.LEFT);
+
+                        return cb.equal(ciudadJoin.get("idCiudad"), idCiudad);
                     }
             );
         }
@@ -337,7 +370,8 @@ public class PersonaService {
         if (barrioOptional.isEmpty()) {
             throw new RuntimeException("El barrio no existe");
         }
-        persona.setBarrio_nombre(barrioOptional.get().getNombreBarrio());
+        Barrio barrio = barrioOptional.get();
+        persona.setBarrio_nombre(barrio.getNombreBarrio());
         Optional<Usuario> liderOptional = usuarioRepository.findUsuarioByBarrio_IdBarrio(barrioOptional.get().getIdBarrio());
         persona.setLider_nombre(barrioOptional.get().getUsuario().getNombre() + " " + barrioOptional.get().getUsuario().getApellido());
         persona.setImagen_url(
@@ -346,6 +380,8 @@ public class PersonaService {
                         : null
         );
         persona.setYear(personaData.getYear());
+        persona.setDepartamento(barrio.getCiudad().getDepartamento().getNombreDepartamento());
+        persona.setCiudad(barrio.getCiudad().getNombreCiudad());
         return persona;
     }
 }

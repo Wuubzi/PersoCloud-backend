@@ -15,6 +15,8 @@ public class PersonaResponseDTO {
     private String lugar_votacion;
     private String barrio_nombre;
     private String lider_nombre;
+    private String departamento;
+    private String ciudad;
     private String imagen_url;
     private Short year;
 }

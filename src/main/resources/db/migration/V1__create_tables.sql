@@ -7,12 +7,26 @@ CREATE TABLE auditoria
     fecha          TIMESTAMP WITHOUT TIME ZONE
 );
 
+CREATE TABLE departamentos
+(
+    id_departamento SERIAL PRIMARY KEY NOT NULL,
+    nombre_departamento VARCHAR(255)
+);
+
+CREATE TABLE ciudades
+(
+    id_ciudad SERIAL PRIMARY KEY NOT NULL,
+    nombre_ciudad VARCHAR(255),
+    id_departamento BIGINT
+);
+
 CREATE TABLE barrios
 (
     id_barrio     SERIAL PRIMARY KEY NOT NULL,
     nombre_barrio VARCHAR(255),
     estado        BOOLEAN,
-    id_usuario      BIGINT
+    id_usuario    BIGINT,
+    id_ciudad     BIGINT
 );
 
 CREATE TABLE credenciales
@@ -62,6 +76,8 @@ CREATE TABLE usuarios
     id_credencial BIGINT
 );
 
+
+
 ALTER TABLE usuarios
     ADD CONSTRAINT uc_usuarios_id_credencial UNIQUE (id_credencial);
 
@@ -70,3 +86,16 @@ ALTER TABLE usuarios
 
 ALTER TABLE usuarios
     ADD CONSTRAINT FK_USUARIOS_ON_ID_ROL FOREIGN KEY (id_rol) REFERENCES roles (id_rol);
+
+ALTER TABLE personas
+    ADD CONSTRAINT FK_PERSONAS_ON_ID_BARRIO FOREIGN KEY (id_barrio) REFERENCES barrios (id_barrio);
+
+ALTER TABLE barrios
+    ADD CONSTRAINT FK_BARRIOS_ON_ID_CIUDAD FOREIGN KEY (id_ciudad) REFERENCES ciudades (id_ciudad);
+
+ALTER TABLE ciudades
+     ADD CONSTRAINT FK_CIUDAD_ON_ID_DEPARTAMENTO FOREIGN KEY (id_departamento) REFERENCES departamentos (id_departamento);
+
+ALTER TABLE barrios
+    ADD CONSTRAINT FK_BARRIOS_ON_ID_USUARIO
+        FOREIGN KEY (id_usuario) REFERENCES usuarios (id_usuario);

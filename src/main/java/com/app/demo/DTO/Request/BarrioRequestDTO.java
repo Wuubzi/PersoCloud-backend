@@ -6,4 +6,5 @@ import lombok.Data;
 public class BarrioRequestDTO {
     private String nombre_barrio;
     private Long id_lider;
+    private Long id_ciudad;
 }

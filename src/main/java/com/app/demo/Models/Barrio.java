@@ -22,4 +22,7 @@ public class Barrio {
     private Usuario usuario;
     @OneToMany(mappedBy = "barrio")
     private List<Persona> persona;
+    @ManyToOne
+    @JoinColumn(name = "id_ciudad")
+    private Ciudad ciudad;
 }

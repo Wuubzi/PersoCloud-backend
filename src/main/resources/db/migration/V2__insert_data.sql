@@ -40,18 +40,23 @@ INSERT INTO usuarios(nombre,apellido,estado,id_rol,id_credencial) VALUES
                                                                       ('Jorge','Suarez',true,2,14),
                                                                       ('Paula','Diaz',true,2,15);
 
-INSERT INTO barrios(nombre_barrio, estado, id_usuario) VALUES
-                                                         ('Villa Cristina',true,2),
-                                                         ('Villa San Francisco',true,3),
-                                                         ('Villa San Juan',true,4),
-                                                         ('El poblado', true, 5),
-                                                         ('Villa Katanga', true, 6),
-                                                         ('El Hipódromo', true, 7),
-                                                         ('Los robles', true, 8),
-                                                         ('Nueva Esperanza', true, 9),
-                                                         ('El Carmen', true, 10),
-                                                         ('Soledad 2000', true, 11),
-                                                         ('Las Margaritas', true, 12),
-                                                         ('El Carmen', true, 13),
-                                                         ('Las Colonias', true , 14),
-                                                         ('Ciudad Camelot', true, 15);
+
+
+INSERT INTO departamentos(nombre_departamento) VALUES ('Atlantico');
+
+INSERT INTO ciudades(nombre_ciudad, id_departamento) VALUES ('Soledad',1);
+INSERT INTO barrios(nombre_barrio, estado, id_usuario, id_ciudad) VALUES
+                                                         ('Villa Cristina',true,2, 1),
+                                                         ('Villa San Francisco',true,3, 1),
+                                                         ('Villa San Juan',true,4,1 ),
+                                                         ('El poblado', true, 5, 1),
+                                                         ('Villa Katanga', true, 6, 1),
+                                                         ('El Hipódromo', true, 7,1 ),
+                                                         ('Los robles', true, 8, 1),
+                                                         ('Nueva Esperanza', true, 9, 1),
+                                                         ('El Carmen', true, 10, 1),
+                                                         ('Soledad 2000', true, 11, 1),
+                                                         ('Las Margaritas', true, 12, 1),
+                                                         ('El Carmen', true, 13, 1),
+                                                         ('Las Colonias', true , 14, 1),
+                                                         ('Ciudad Camelot', true, 15, 1);

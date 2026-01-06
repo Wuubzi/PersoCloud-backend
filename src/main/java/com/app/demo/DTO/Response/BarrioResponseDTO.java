@@ -9,4 +9,7 @@ public class BarrioResponseDTO {
     private String nombre_lider;
     private Long id_lider;
     private Boolean estado;
+    private String departamento;
+    private String ciudad;
+    private String id_ciudad;
 }
