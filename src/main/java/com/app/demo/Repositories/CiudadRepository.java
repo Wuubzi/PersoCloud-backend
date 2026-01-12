@@ -12,4 +12,5 @@ import java.util.Optional;
 @Repository
 public interface CiudadRepository extends JpaRepository<Ciudad, Long>, JpaSpecificationExecutor<Ciudad> {
     List<Ciudad> findAllByDepartamento_IdDepartamento(Long idDepartamento);
+    Optional<Ciudad> findBy(Long idCiudad, Long idDepartamento);
 }

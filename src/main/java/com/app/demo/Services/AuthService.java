@@ -2,6 +2,7 @@ package com.app.demo.Services;
 
 import com.app.demo.DTO.Request.LoginRequestDTO;
 import com.app.demo.DTO.Response.AuthResponseDTO;
+import com.app.demo.Models.Ciudad;
 import com.app.demo.Models.ModoSistema;
 import com.app.demo.Models.Usuario;
 import com.app.demo.Repositories.*;
@@ -24,7 +25,9 @@ public class AuthService {
     private ModoRepository modoRepository;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CiudadRepository ciudadRepository;
     private final RolRepository rolRepository;
+    private final UsuarioHelperService usuarioHelperService;
     private final CredencialRepository credencialRepository;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -36,6 +39,8 @@ public class AuthService {
                        RolRepository rolRepository,
                        PasswordEncoder passwordEncoder,
                        CredencialRepository credencialRepository,
+                       CiudadRepository ciudadRepository,
+                       UsuarioHelperService usuarioHelperService,
                        JwtService jwtService,
                        AuthenticationManager authenticationManager,
                        ModoRepository modoRepository,
@@ -48,6 +53,8 @@ public class AuthService {
         this.modoRepository = modoRepository;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
+        this.usuarioHelperService = usuarioHelperService;
+        this.ciudadRepository = ciudadRepository;
     }
 
   public AuthResponseDTO login(LoginRequestDTO data, HttpServletRequest request) {
@@ -63,6 +70,14 @@ public class AuthService {
         if (!modoSistemaOptional.get().getModo()) {
             throw new RuntimeException("No Tienes Acceso al Sistema");
         }
+
+       String correo = this.usuarioHelperService.obtenerCorreoLiderPrincipal(data.getCorreo());
+      Usuario usuario = usuarioRepository.findUsuarioByCredencial_Correo(correo)
+              .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+      if (usuario.getCiudad() == null) {
+          throw new RuntimeException("El líder o sublíder no tiene ciudad asignada");
+      }
       return getAuthResponseDTO(data, request);
   }
 
