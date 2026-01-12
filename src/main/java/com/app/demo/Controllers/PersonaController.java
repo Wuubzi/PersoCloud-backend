@@ -30,33 +30,35 @@ public class PersonaController {
 
 
     @GetMapping("/stats")
-    public ResponseEntity<PersonaStatsResponseDTO> getStats(@RequestParam Long idBarrio){
-     return new ResponseEntity<>(personaService.getStats(idBarrio), HttpStatus.OK);
+    public ResponseEntity<PersonaStatsResponseDTO> getStats(@RequestParam Long idLider){
+     return new ResponseEntity<>(personaService.getStats(idLider), HttpStatus.OK);
     }
     @GetMapping("/personas")
     public ResponseEntity<Page<PersonaResponseDTO>> getPersonas(
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) Long barrio,
+            @RequestParam(required = false) Long lider,
             @RequestParam(required = false) Short year,
             @RequestParam(required = false) Boolean estado_votacion,
-            @RequestParam(required = false) String departamento,
-            @RequestParam(required = false) Long ciudad
+            @RequestParam(required = false) Long departamento,
+            @RequestParam(required = false) Long ciudad,
+            @RequestParam(required = false) Long PuestoVotacion,
+            @RequestParam(required = false) Long Mesa
     ){
-        return new ResponseEntity<>(personaService.getPersonas(page,size,search,year,estado_votacion, barrio, departamento,ciudad), HttpStatus.OK);
+        return new ResponseEntity<>(personaService.getPersonas(page,size,search,year,estado_votacion, lider, departamento,ciudad, PuestoVotacion, Mesa), HttpStatus.OK);
     }
 
-    @GetMapping("/personasBarrio")
-    public ResponseEntity<Page<PersonaResponseDTO>> getPersonasBarrio(
-            @RequestParam Long idBarrio,
+    @GetMapping("/personasLider")
+    public ResponseEntity<Page<PersonaResponseDTO>> getPersonasLider(
+            @RequestParam Long idLider,
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean estado_votacion
     )
     {
-        return new ResponseEntity<>(personaService.getPersonasBarrio(idBarrio,page,size,search,estado_votacion), HttpStatus.OK);
+        return new ResponseEntity<>(personaService.getPersonasLider(idLider,page,size,search,estado_votacion), HttpStatus.OK);
     }
 
     @GetMapping("/personasExport")
@@ -65,9 +67,9 @@ public class PersonaController {
     }
 
 
-    @GetMapping("/personaBarrioExport")
-    public ResponseEntity<List<PersonaResponseDTO>> getPersonasBarrioExport(@RequestParam Long idBarrio){
-        return new ResponseEntity<>(personaService.getPersonasBarrioExport(idBarrio), HttpStatus.OK);
+    @GetMapping("/personaLiderExport")
+    public ResponseEntity<List<PersonaResponseDTO>> getPersonasBarrioExport(@RequestParam Long idLider){
+        return new ResponseEntity<>(personaService.getPersonasLiderExport(idLider), HttpStatus.OK);
 
     }
 

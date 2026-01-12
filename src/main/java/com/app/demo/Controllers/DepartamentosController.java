@@ -32,7 +32,7 @@ public class DepartamentosController {
         return departamentoService.getDepartamentos(page,size,search);
     }
 
-    @RequestMapping("/getDepartamento")
+    @RequestMapping("/departamento")
     public DepartamentoResponseDTO getDepartamento(@RequestParam Long idDepartamento){
         return departamentoService.getDepartamento(idDepartamento);
     }

@@ -2,7 +2,6 @@ package com.app.demo.Services;
 
 import com.app.demo.DTO.Request.LoginRequestDTO;
 import com.app.demo.DTO.Response.AuthResponseDTO;
-import com.app.demo.Models.Barrio;
 import com.app.demo.Models.ModoSistema;
 import com.app.demo.Models.Usuario;
 import com.app.demo.Repositories.*;
@@ -11,7 +10,7 @@ import com.app.demo.Utils.DateFormat;
 import com.app.demo.Utils.JwtService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.commons.codec.digest.DigestUtils;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,7 +25,6 @@ public class AuthService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final RolRepository rolRepository;
-    private final BarrioRepository barrioRepository;
     private final CredencialRepository credencialRepository;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
@@ -38,7 +36,6 @@ public class AuthService {
                        RolRepository rolRepository,
                        PasswordEncoder passwordEncoder,
                        CredencialRepository credencialRepository,
-                       BarrioRepository barrioRepository,
                        JwtService jwtService,
                        AuthenticationManager authenticationManager,
                        ModoRepository modoRepository,
@@ -51,10 +48,27 @@ public class AuthService {
         this.modoRepository = modoRepository;
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
-        this.barrioRepository = barrioRepository;
     }
 
   public AuthResponseDTO login(LoginRequestDTO data, HttpServletRequest request) {
+      return getAuthResponseDTO(data, request);
+
+  }
+
+  public  AuthResponseDTO loginApp(LoginRequestDTO data, HttpServletRequest request) {
+        Optional<ModoSistema> modoSistemaOptional = modoRepository.findById(1L);
+        if (modoSistemaOptional.isEmpty()) {
+            throw new RuntimeException("El modo no existe");
+        }
+        if (!modoSistemaOptional.get().getModo()) {
+            throw new RuntimeException("No Tienes Acceso al Sistema");
+        }
+      return getAuthResponseDTO(data, request);
+  }
+
+
+    @NonNull
+    private AuthResponseDTO getAuthResponseDTO(LoginRequestDTO data, HttpServletRequest request) {
         Optional<Usuario> usuario = usuarioRepository.findUsuarioByCredencial_Correo(data.getCorreo());
         if (usuario.isEmpty()) {
             throw new EntityNotFoundException("Usuario no encontrado");
@@ -70,45 +84,12 @@ public class AuthService {
                         data.getContrasena()
                 )
         );
-      CustomUserDetails userDetails = new CustomUserDetails(usuario.get());
-      String token = jwtService.generateToken(userDetails);
+        CustomUserDetails userDetails = new CustomUserDetails(usuario.get());
+        String token = jwtService.generateToken(userDetails);
         return getresponseDTO("Login exitoso", 200, request, token);
+    }
 
-  }
-
-  public  AuthResponseDTO loginLider(LoginRequestDTO data, HttpServletRequest request) {
-        Optional<ModoSistema> modoSistemaOptional = modoRepository.findById(1L);
-        if (modoSistemaOptional.isEmpty()) {
-            throw new RuntimeException("El modo no existe");
-        }
-        if (!modoSistemaOptional.get().getModo()) {
-            throw new RuntimeException("No Tienes Acceso al Sistema");
-        }
-      Optional<Usuario> usuario = usuarioRepository.findUsuarioByCredencial_Correo(data.getCorreo());
-      if (usuario.isEmpty()) {
-          throw new EntityNotFoundException("Usuario no encontrado");
-      }
-      Optional<Barrio> barrioOptional = barrioRepository.findBarrioByUsuario_IdUsuario(usuario.get().getIdUsuario());
-      if (barrioOptional.isEmpty()) {
-          throw new EntityNotFoundException("El lider no tiene barrio asignado");
-      }
-      boolean isPasswordMatch = passwordEncoder.matches(data.getContrasena(), usuario.get().getCredencial().getContrasena());
-      if (!isPasswordMatch) {
-          throw new RuntimeException("La contraseña es incorrecta");
-      }
-
-      authenticationManager.authenticate(
-              new UsernamePasswordAuthenticationToken(
-                      data.getCorreo(),
-                      data.getContrasena()
-              )
-      );
-      CustomUserDetails userDetails = new CustomUserDetails(usuario.get());
-      String token = jwtService.generateToken(userDetails);
-      return getresponseDTO("Login exitoso", 200, request, token);
-  }
-
-  public String hash(String password) {
+    public String hash(String password) {
         return passwordEncoder.encode(password);
   }
 

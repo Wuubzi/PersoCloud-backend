@@ -7,4 +7,5 @@ public class LiderUpdateRequestDTO {
     private String nombre;
     private String apellido;
     private String correo;
+    private Long ciudad;
 }

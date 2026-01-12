@@ -3,10 +3,9 @@ package com.app.demo.DTO.Request;
 import lombok.Data;
 
 @Data
-public class LiderRequestDTO {
+public class SubLiderRequestDTO {
     private String nombre;
     private String apellido;
     private String correo;
     private String contrasena;
-    private Long ciudad;
 }

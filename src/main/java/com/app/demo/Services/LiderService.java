@@ -5,13 +5,8 @@ import com.app.demo.DTO.Request.LiderRequestDTO;
 import com.app.demo.DTO.Request.LiderUpdateRequestDTO;
 import com.app.demo.DTO.Response.LiderResponseDTO;
 import com.app.demo.DTO.Response.ResponseDTO;
-import com.app.demo.Models.Credencial;
-import com.app.demo.Models.Rol;
-import com.app.demo.Models.Usuario;
-import com.app.demo.Repositories.AuditoriaRepository;
-import com.app.demo.Repositories.CredencialRepository;
-import com.app.demo.Repositories.RolRepository;
-import com.app.demo.Repositories.UsuarioRepository;
+import com.app.demo.Models.*;
+import com.app.demo.Repositories.*;
 import com.app.demo.Utils.DateFormat;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,23 +28,29 @@ public class LiderService {
     private final AuditoriaService auditoriaService;
     private final UsuarioRepository usuarioRepository;
     private final RolRepository rolRepository;
+    private final CiudadRepository ciudadRepository;
     private final DateFormat dateFormat;
     private final PasswordEncoder passwordEncoder;
     private final CredencialRepository credencialRepository;
+    private final UsuarioHelperService usuarioHelperService; // ← NUEVO
 
     @Autowired
     public LiderService(UsuarioRepository usuarioRepository,
                         DateFormat dateFormat,
                         PasswordEncoder passwordEncoder,
                         RolRepository rolRepository,
+                        CiudadRepository ciudadRepository,
                         CredencialRepository credencialRepository,
-                        AuditoriaService auditoriaService) {
+                        AuditoriaService auditoriaService,
+                        UsuarioHelperService usuarioHelperService) { // ← NUEVO
         this.usuarioRepository = usuarioRepository;
         this.dateFormat = dateFormat;
         this.passwordEncoder = passwordEncoder;
         this.rolRepository = rolRepository;
+        this.ciudadRepository = ciudadRepository;
         this.credencialRepository = credencialRepository;
         this.auditoriaService = auditoriaService;
+        this.usuarioHelperService = usuarioHelperService; // ← NUEVO
     }
 
 
@@ -101,22 +102,23 @@ public class LiderService {
         lider.setApellido(optionalUsuario.get().getApellido());
         lider.setCorreo(optionalUsuario.get().getCredencial().getCorreo());
         lider.setEstado(optionalUsuario.get().getEstado());
+        lider.setId_ciudad(optionalUsuario.get().getCiudad().getIdCiudad());
+        lider.setId_departamento(optionalUsuario.get().getCiudad().getDepartamento().getIdDepartamento());
         return lider;
     }
 
     public LiderResponseDTO getLiderCorreo(String correo){
-        Optional<Usuario> optionalUsuario = usuarioRepository.findByCredencial_CorreoAndRol_NombreRol(correo, "LÍDER");
+        String correoLiderPrincipal = usuarioHelperService.obtenerCorreoLiderPrincipal(correo);
+
+        Optional<Usuario> optionalUsuario = usuarioRepository.findByCredencial_CorreoAndRol_NombreRol(
+                correoLiderPrincipal, "LÍDER"
+        );
+
         if (optionalUsuario.isEmpty()) {
-            throw new EntityNotFoundException("El usuario no existe");
+            throw new EntityNotFoundException("El líder no existe");
         }
 
-        LiderResponseDTO lider = new LiderResponseDTO();
-        lider.setId_lider(optionalUsuario.get().getIdUsuario());
-        lider.setNombre(optionalUsuario.get().getNombre());
-        lider.setApellido(optionalUsuario.get().getApellido());
-        lider.setCorreo(optionalUsuario.get().getCredencial().getCorreo());
-        lider.setEstado(optionalUsuario.get().getEstado());
-        return lider;
+        return mapToDTO(optionalUsuario.get());
     }
 
     public ResponseDTO createLider(String correoUsuario, LiderRequestDTO lider, HttpServletRequest request){
@@ -128,10 +130,16 @@ public class LiderService {
         if(usuarioOptional.isPresent()){
             throw new RuntimeException("El correo ya existe");
         }
+
+        Optional<Ciudad> ciudadOptional = ciudadRepository.findById(lider.getCiudad());
+        if(ciudadOptional.isEmpty()){
+            throw new RuntimeException("La ciudad no existe");
+        }
         Usuario usuario = new Usuario();
         usuario.setNombre(lider.getNombre());
         usuario.setApellido(lider.getApellido());
         usuario.setEstado(true);
+        usuario.setCiudad(ciudadOptional.get());
         Credencial credencial = new Credencial();
         credencial.setCorreo(lider.getCorreo());
         credencial.setContrasena(passwordEncoder.encode(lider.getContrasena()));
@@ -150,6 +158,10 @@ public class LiderService {
         if (usuarioOptional.isEmpty()) {
             throw new EntityNotFoundException("El usuario no existe");
         }
+        Optional<Ciudad> ciudadOptional = ciudadRepository.findById(lider.getCiudad());
+        if(ciudadOptional.isEmpty()){
+            throw new RuntimeException("La ciudad no existe");
+        }
 
         Usuario usuario = usuarioOptional.get();
         if (lider.getCorreo() != null && !lider.getCorreo().isBlank()) {
@@ -159,6 +171,7 @@ public class LiderService {
         usuario.setNombre(lider.getNombre());
         usuario.setApellido(lider.getApellido());
         usuario.getCredencial().setCorreo(lider.getCorreo());
+        usuario.setCiudad(ciudadOptional.get());
         Usuario saved = usuarioRepository.save(usuario);
         this.auditoriaService.saveAuditoria(correoUsuario, "Líder " + saved.getNombre() + " Actualizado");
         return getresponseDTO("Líder Actualizado Exitosamente", 201, request);
@@ -194,8 +207,33 @@ public class LiderService {
         lider.setApellido(usuario.getApellido());
         lider.setCorreo(usuario.getCredencial().getCorreo());
         lider.setEstado(usuario.getEstado());
+
+        if (usuario.getCiudad() != null) {
+            lider.setId_ciudad(usuario.getCiudad().getIdCiudad());
+            lider.setCiudad(usuario.getCiudad().getNombreCiudad());
+
+            if (usuario.getCiudad().getDepartamento() != null) {
+                lider.setId_departamento(
+                        usuario.getCiudad().getDepartamento().getIdDepartamento()
+                );
+                lider.setDepartamento(
+                        usuario.getCiudad().getDepartamento().getNombreDepartamento()
+                );
+            } else {
+                lider.setId_departamento(null);
+                lider.setDepartamento(null);
+            }
+
+        } else {
+            lider.setId_ciudad(null);
+            lider.setCiudad(null);
+            lider.setId_departamento(null);
+            lider.setDepartamento(null);
+        }
+
         return lider;
     }
+
     private ResponseDTO getresponseDTO(String message, int status, HttpServletRequest request) {
         ResponseDTO responseDTO = new ResponseDTO();
         responseDTO.setTimestamp(dateFormat.getDate());

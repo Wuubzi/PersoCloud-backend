@@ -13,8 +13,12 @@ public class PersonaResponseDTO {
     private String telefono;
     private Boolean estado_votacion;
     private String lugar_votacion;
+    private Long id_puesto_votacion;
+    private Long id_mesa;
     private String barrio_nombre;
-    private String lider_nombre;
+    private Long id_lider;
+    private String nombre_lider;
+    private String mesa;
     private String departamento;
     private String ciudad;
     private String imagen_url;

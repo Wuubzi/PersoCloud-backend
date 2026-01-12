@@ -32,6 +32,11 @@ public class CiudadesController {
         return ciudadService.getCiudades(page, size, search);
     }
 
+    @RequestMapping("/getCiudadesByDepartamento")
+    public List<CiudadResponseDTO> getCiudadesByDepartamento(@RequestParam Long idDepartamento){
+        return ciudadService.getCiudadesByDepartamento(idDepartamento);
+    }
+
     @RequestMapping("/ciudad")
     public CiudadResponseDTO getCiudad(Long idCiudad){
         return ciudadService.getCiudad(idCiudad);

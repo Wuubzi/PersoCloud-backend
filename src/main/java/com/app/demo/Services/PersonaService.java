@@ -1,20 +1,18 @@
 package com.app.demo.Services;
-
 import com.app.demo.DTO.Request.PersonaRequestDTO;
-import com.app.demo.DTO.Response.LiderResponseDTO;
 import com.app.demo.DTO.Response.PersonaResponseDTO;
 import com.app.demo.DTO.Response.PersonaStatsResponseDTO;
 import com.app.demo.DTO.Response.ResponseDTO;
 import com.app.demo.Models.*;
-import com.app.demo.Repositories.BarrioRepository;
+import com.app.demo.Repositories.MesaRepository;
 import com.app.demo.Repositories.PersonaRepository;
+import com.app.demo.Repositories.PuestoVotacionRepository;
 import com.app.demo.Repositories.UsuarioRepository;
 import com.app.demo.Utils.AESUtils;
 import com.app.demo.Utils.DateFormat;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.commons.codec.cli.Digest;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -23,7 +21,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Year;
@@ -33,8 +30,9 @@ import java.util.Optional;
 @Service
 public class PersonaService {
     private final PersonaRepository personaRepository;
-    private final BarrioRepository barrioRepository;
     private final UsuarioRepository usuarioRepository;
+    private final MesaRepository mesaRepository;
+    private final PuestoVotacionRepository puestoVotacionRepository;
     private final ImagesService imagesService;
     private final AuditoriaService auditoriaService;
     private final DateFormat dateFormat;
@@ -43,21 +41,21 @@ public class PersonaService {
     public PersonaService(PersonaRepository personaRepository,
                           AuditoriaService auditoriaService,
                           UsuarioRepository usuarioRepository,
-                          BarrioRepository barrioRepository,
+                          PuestoVotacionRepository puestoVotacionRepository,
+                          MesaRepository mesaRepository,
                           ImagesService imagesService,
                           DateFormat dateFormat) {
         this.personaRepository = personaRepository;
-        this.barrioRepository = barrioRepository;
         this.dateFormat = dateFormat;
         this.imagesService = imagesService;
+        this.mesaRepository = mesaRepository;
+        this.puestoVotacionRepository = puestoVotacionRepository;
         this.usuarioRepository = usuarioRepository;
         this.auditoriaService = auditoriaService;
     }
 
-
-    public Page<PersonaResponseDTO> getPersonas(int page, int size, String search, Short year, Boolean estado_votacion, Long idBarrio, String departamento, Long idCiudad){
+    public Page<PersonaResponseDTO> getPersonas(int page, int size, String search, Short year, Boolean estado_votacion, Long idLider, Long departamento, Long idCiudad, Long PuestoVotacion, Long mesa){
         Pageable pageable = PageRequest.of(page, size);
-
         Specification<Persona> spec = (root, query, cb) -> cb.conjunction();
 
         if (year != null) {
@@ -66,7 +64,6 @@ public class PersonaService {
             );
         }
 
-
         if (search != null && !search.isBlank()) {
             String like = "%" + search.toLowerCase() + "%";
             spec = spec.and((root, query, cb) -> {
@@ -81,10 +78,8 @@ public class PersonaService {
                                 )
                         )
                 );
-                Join<Persona, Barrio> barrioJoin = root.join("barrio", JoinType.LEFT);
-                Join<Barrio, Usuario> usuarioJoin = barrioJoin.join("usuario", JoinType.LEFT);
 
-
+                Join<Persona, Usuario> usuarioJoin = root.join("usuario", JoinType.LEFT);
                 var nombreCompletoLider = cb.concat(
                         cb.concat(
                                 cb.lower(usuarioJoin.get("nombre")),
@@ -93,63 +88,77 @@ public class PersonaService {
                         cb.lower(usuarioJoin.get("apellido"))
                 );
 
-
                 String searchHash = DigestUtils.sha256Hex(search);
-
                 return cb.or(
-                        cb.like(cb.lower(nombreCompleto), like),          // Nombres
-                        cb.equal(root.get("numeroIdentificacionHash"), searchHash), // Identificación cifrada (búsqueda exacta)
+                        cb.like(cb.lower(nombreCompleto), like),
+                        cb.equal(root.get("numeroIdentificacionHash"), searchHash),
                         cb.like(cb.lower(usuarioJoin.get("nombre")), like),
                         cb.like(nombreCompletoLider, like),
                         cb.like(cb.lower(usuarioJoin.get("apellido")), like),
-                        cb.like(cb.lower(root.get("telefono")), like)     // Teléfono
+                        cb.like(cb.lower(root.get("telefono")), like)
                 );
             });
         }
 
-        if (idBarrio != null) {
-
+        if (idLider != null) {
             spec = spec.and((root, query, cb) -> {
-                        Join<Persona, Barrio> barrioJoin = root.join("barrio", JoinType.LEFT);
-                        return cb.equal(barrioJoin.get("idBarrio"), idBarrio);
+                        Join<Persona, Usuario> usuarioJoin = root.join("usuario", JoinType.LEFT);
+                        return cb.equal(usuarioJoin.get("idUsuario"), idLider);
                     }
             );
         }
 
-        if (departamento != null && !departamento.isBlank()) {
-            String like = "%" + departamento.toLowerCase() + "%";
+        if (departamento != null) {
 
             spec = spec.and((root, query, cb) -> {
 
-                Join<Persona, Barrio> barrioJoin =
-                        root.join("barrio", JoinType.LEFT);
+                Join<Persona, Usuario> usuarioJoin =
+                        root.join("usuario", JoinType.LEFT);
 
-                Join<Barrio, Ciudad> ciudadJoin =
-                        barrioJoin.join("ciudad", JoinType.LEFT);
+                Join<Usuario, Ciudad> ciudadJoin =
+                        usuarioJoin.join("ciudad", JoinType.LEFT);
 
                 Join<Ciudad, Departamento> departamentoJoin =
                         ciudadJoin.join("departamento", JoinType.LEFT);
 
-                return cb.like(
-                        cb.lower(departamentoJoin.get("nombreDepartamento")),
-                        like
+                return cb.equal(
+                        departamentoJoin.get("idDepartamento"),
+                        departamento
                 );
             });
+        }
+
+        if (PuestoVotacion != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("idPuestoVotacion"), PuestoVotacion)
+            );
+        }
+
+
+
+        if (mesa != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("id_mesa"), mesa)
+            );
         }
 
 
         if (idCiudad != null) {
             spec = spec.and((root, query, cb) -> {
-                Join<Persona, Barrio> barrioJoin =
-                        root.join("barrio", JoinType.LEFT);
 
-                Join<Barrio, Ciudad> ciudadJoin =
-                        barrioJoin.join("ciudad", JoinType.LEFT);
+                Join<Persona, Usuario> usuarioJoin =
+                        root.join("usuario", JoinType.LEFT);
 
-                        return cb.equal(ciudadJoin.get("idCiudad"), idCiudad);
-                    }
-            );
+                Join<Usuario, Ciudad> ciudadJoin =
+                        usuarioJoin.join("ciudad", JoinType.LEFT);
+
+                return cb.equal(
+                        ciudadJoin.get("idCiudad"),
+                        idCiudad
+                );
+            });
         }
+
 
         if(estado_votacion != null){
             spec = spec.and((root, query, cb) ->
@@ -158,19 +167,16 @@ public class PersonaService {
         }
 
         Page<Persona> personas = personaRepository.findAll(spec,pageable);
-
         return personas.map(this::mapToDTO);
     }
 
-    public Page<PersonaResponseDTO> getPersonasBarrio(Long idBarrio,int page, int size, String search, Boolean estado_votacion){
+    public Page<PersonaResponseDTO> getPersonasLider(Long idLider, int page, int size, String search, Boolean estado_votacion){
         Pageable pageable = PageRequest.of(page, size);
-
         Specification<Persona> spec = (root, query, cb) -> cb.conjunction();
 
-
         spec = spec.and((root, query, cb) -> {
-                 Join<Persona, Barrio> barrioJoin = root.join("barrio", JoinType.INNER);
-                 return cb.equal(barrioJoin.get("idBarrio"), idBarrio);
+                    Join<Persona, Usuario> usuarioJoin = root.join("usuario", JoinType.INNER);
+                    return cb.equal(usuarioJoin.get("idUsuario"), idLider);
                 }
         );
 
@@ -179,12 +185,9 @@ public class PersonaService {
                 cb.equal(root.get("year"), currentYear)
         );
 
-
         if (search != null && !search.isBlank()) {
             String like = "%" + search.toLowerCase() + "%";
-
             spec = spec.and((root, query, cb) -> {
-                // Nombre completo concatenado
                 var nombreCompleto = cb.concat(
                         cb.concat(root.get("primerNombre"), " "),
                         cb.concat(
@@ -195,26 +198,12 @@ public class PersonaService {
                                 )
                         )
                 );
-                Join<Barrio, Usuario> usuarioJoin = root.join("usuario", JoinType.LEFT);
-
-                var nombreCompletoLider = cb.concat(
-                        cb.concat(
-                                cb.lower(usuarioJoin.get("nombre")),
-                                " "
-                        ),
-                        cb.lower(usuarioJoin.get("apellido"))
-                );
-
 
                 String searchHash = DigestUtils.sha256Hex(search);
-
                 return cb.or(
-                        cb.like(cb.lower(nombreCompleto), like),          // Nombres
-                        cb.equal(root.get("numeroIdentificacionHash"), searchHash), // Identificación cifrada (búsqueda exacta)
-                        cb.like(cb.lower(usuarioJoin.get("nombre")), like),
-                        cb.like(nombreCompletoLider, like),
-                        cb.like(cb.lower(usuarioJoin.get("apellido")), like),
-                        cb.like(cb.lower(root.get("telefono")), like)     // Teléfono
+                        cb.like(cb.lower(nombreCompleto), like),
+                        cb.equal(root.get("numeroIdentificacionHash"), searchHash),
+                        cb.like(cb.lower(root.get("telefono")), like)
                 );
             });
         }
@@ -226,7 +215,6 @@ public class PersonaService {
         }
 
         Page<Persona> personas = personaRepository.findAll(spec,pageable);
-
         return personas.map(this::mapToDTO);
     }
 
@@ -234,11 +222,17 @@ public class PersonaService {
         return personaRepository.findAll().stream().map(this::mapToDTO).toList();
     }
 
-    public List<PersonaResponseDTO> getPersonasBarrioExport(Long idBarrio) {
-        return personaRepository.findAllByBarrio_IdBarrio(idBarrio).stream().map(this::mapToDTO).toList();
+    public List<PersonaResponseDTO> getPersonasLiderExport(Long idLider) {
+        Short currentYear = (short) Year.now().getValue();
+        Specification<Persona> spec = (root, query, cb) -> {
+            Join<Persona, Usuario> usuarioJoin = root.join("usuario", JoinType.INNER);
+            return cb.and(
+                    cb.equal(usuarioJoin.get("idUsuario"), idLider),
+                    cb.equal(root.get("year"), currentYear)
+            );
+        };
+        return personaRepository.findAll(spec).stream().map(this::mapToDTO).toList();
     }
-
-
 
     public PersonaResponseDTO getPersona(Long idPersona){
         Optional<Persona> personaOptional = personaRepository.findById(idPersona);
@@ -247,17 +241,26 @@ public class PersonaService {
         }
         return mapToDTO(personaOptional.get());
     }
-    public PersonaStatsResponseDTO getStats(Long idBarrio) {
+
+    public PersonaStatsResponseDTO getStats(Long idLider) {
         LocalDate hoy = LocalDate.now();
         Short year = (short) Year.now().getValue();
-
-        LocalDateTime  inicio = hoy.atStartOfDay();
+        LocalDateTime inicio = hoy.atStartOfDay();
         LocalDateTime fin = hoy.atTime(23, 59, 59, 999_999_999);
-        int totalPersonas = personaRepository.countAllByBarrio_IdBarrioAndYear(idBarrio, year );
-        int totalVotaron = personaRepository.countAllByBarrio_IdBarrioAndEstadoVotacionAndYear(idBarrio, true, year);
-        int totalSinVotar = personaRepository.countAllByBarrio_IdBarrioAndEstadoVotacionAndYear(idBarrio, false, year);
-        int registradosHoy = personaRepository.findByFechaRegistroBetweenAndBarrio_IdBarrio(inicio,fin, idBarrio).size();
-        double progresoVotacion = (double) totalVotaron / totalPersonas * 100;
+
+        int totalPersonas;
+        int totalVotaron;
+        int totalSinVotar;
+        int registradosHoy;
+
+            // Estadísticas filtradas por líder
+            totalPersonas = personaRepository.countByUsuarioIdUsuarioAndYear(idLider, year);
+            totalVotaron = personaRepository.countByUsuarioIdUsuarioAndEstadoVotacionAndYear(idLider, true, year);
+            totalSinVotar = personaRepository.countByUsuarioIdUsuarioAndEstadoVotacionAndYear(idLider, false, year);
+            registradosHoy = personaRepository.countByUsuarioIdUsuarioAndFechaRegistroBetween(idLider, inicio, fin);
+
+        double progresoVotacion = totalPersonas > 0 ? (double) totalVotaron / totalPersonas * 100 : 0;
+
         PersonaStatsResponseDTO stats = new PersonaStatsResponseDTO();
         stats.setTotalPersonas(totalPersonas);
         stats.setTotalVotaron(totalVotaron);
@@ -268,19 +271,33 @@ public class PersonaService {
     }
 
     public ResponseDTO crear(String correo, PersonaRequestDTO data, MultipartFile image, HttpServletRequest request) throws Exception {
-
-        Optional<Barrio> barrioOptional = barrioRepository.findById(data.getId_barrio());
-        if(barrioOptional.isEmpty()){
-            throw new RuntimeException("El barrio no existe");
-        }
         Short anioActual = (short) Year.now().getValue();
-
         String numeroIdentificacionHash = DigestUtils.sha256Hex(data.getNumero_identificacion());
+
         Optional<Persona> personaExistente = personaRepository.findByNumeroIdentificacionHashAndYear(numeroIdentificacionHash, anioActual);
+
+        Optional<PuestoVotacion> puestoVotacionOptional = puestoVotacionRepository.findById(data.getId_puesto_votacion());
+        if (puestoVotacionOptional.isEmpty()) {
+
+            throw new RuntimeException("El puesto de votacion no existe");
+        }
+
+        Optional<Mesa> mesaOptional = mesaRepository.findById(data.getId_mesa());
+
+        if (mesaOptional.isEmpty()) {
+            throw new RuntimeException("La mesa especificada no existe");
+        }
         if(personaExistente.isPresent()){
-           Persona persona = personaExistente.get();
-            auditoriaService.saveAuditoria(correo, "Se intento registrar una persona ya registrada en el barrio " + persona.getBarrio().getNombreBarrio() + " del Lider " + persona.getBarrio().getUsuario().getNombre() + "");
+            auditoriaService.saveAuditoria(correo, "Se intento registrar a " + personaExistente.get().getPrimerNombre() + " " + personaExistente.get().getPrimerApellido() + " Con numero de cedula " + AESUtils.decrypt(personaExistente.get().getNumeroIdentificacion()) + " del lider " + personaExistente.get().getUsuario().getNombre() + " " + personaExistente.get().getUsuario().getApellido() + " de " + personaExistente.get().getUsuario().getCiudad().getNombreCiudad() + ", " + personaExistente.get().getUsuario().getCiudad().getDepartamento().getNombreDepartamento());
             throw new RuntimeException("Esta persona ya esta registrada en el sistema");
+        }
+
+        // Validar que el líder existe
+        if(data.getId_lider() != null) {
+            Optional<Usuario> usuarioOptional = usuarioRepository.findById(data.getId_lider());
+            if(usuarioOptional.isEmpty()) {
+                throw new RuntimeException("El líder especificado no existe");
+            }
         }
 
         Persona persona = new Persona();
@@ -288,18 +305,24 @@ public class PersonaService {
         persona.setSegundoNombre(data.getSegundo_nombre());
         persona.setPrimerApellido(data.getPrimer_apellido());
         persona.setSegundoApellido(data.getSegundo_apellido());
-        persona.setNumeroIdentificacion( AESUtils.encrypt(data.getNumero_identificacion()));
+        persona.setNumeroIdentificacion(AESUtils.encrypt(data.getNumero_identificacion()));
         persona.setNumeroIdentificacionHash(DigestUtils.sha256Hex(data.getNumero_identificacion()));
-        persona.setLugarVotacion(data.getLugar_votacion());
+        persona.setIdPuestoVotacion(data.getId_puesto_votacion());
+        persona.setId_mesa(mesaOptional.get().getIdMesa());
         persona.setEstadoVotacion(data.getEstado_votacion());
         persona.setTelefono(data.getTelefono());
         persona.setYear(anioActual);
-        persona.setBarrio(barrioOptional.get());
+
+        if(data.getId_lider() != null) {
+            Usuario usuario = usuarioRepository.findById(data.getId_lider()).get();
+            persona.setUsuario(usuario);
+        }
+
         String imagen_url = imagesService.guardarImagen(image);
         persona.setUrlImagen(imagen_url);
+
         personaRepository.save(persona);
         auditoriaService.saveAuditoria(correo, "Se ha añadido una nueva persona al sistema");
-
         return getresponseDTO("Persona creada correctamente", 201, request);
     }
 
@@ -308,6 +331,7 @@ public class PersonaService {
         if(personaOptional.isEmpty()){
             throw new RuntimeException("La persona no existe");
         }
+
         String numeroIdentificacionHash = DigestUtils.sha256Hex(data.getNumero_identificacion());
         Optional<Persona> personaExistente = personaRepository.findByNumeroIdentificacionHashAndYearAndIdPersonaNot(
                 numeroIdentificacionHash,
@@ -316,26 +340,39 @@ public class PersonaService {
         );
         if (personaExistente.isPresent()) {
             throw new RuntimeException("Ya existe una persona con este número de identificación");
-
         }
+
+        // Validar que el líder existe si se proporciona
+        if(data.getId_lider() != null) {
+            Optional<Usuario> usuarioOptional = usuarioRepository.findById(data.getId_lider());
+            if(usuarioOptional.isEmpty()) {
+                throw new RuntimeException("El líder especificado no existe");
+            }
+        }
+
         Persona persona = personaOptional.get();
         persona.setPrimerNombre(data.getPrimer_nombre());
         persona.setSegundoNombre(data.getSegundo_nombre());
-        persona.setPrimerApellido(data.getPrimer_apellido())    ;
+        persona.setPrimerApellido(data.getPrimer_apellido());
         persona.setSegundoApellido(data.getSegundo_apellido());
-        persona.setNumeroIdentificacion( AESUtils.encrypt(data.getNumero_identificacion()));
-        persona.setLugarVotacion(data.getLugar_votacion());
+        persona.setNumeroIdentificacion(AESUtils.encrypt(data.getNumero_identificacion()));
+        persona.setNumeroIdentificacionHash(numeroIdentificacionHash);
         persona.setEstadoVotacion(data.getEstado_votacion());
+        persona.setTelefono(data.getTelefono());
+
+        if(data.getId_lider() != null) {
+            Usuario usuario = usuarioRepository.findById(data.getId_lider()).get();
+            persona.setUsuario(usuario);
+        }
+
         if (image != null) {
             imagesService.eliminarImagen(persona.getUrlImagen());
             persona.setUrlImagen(imagesService.guardarImagen(image));
         }
-        persona.setTelefono(data.getTelefono());
+
         personaRepository.save(persona);
         auditoriaService.saveAuditoria(correo, "Se ha actualizado una persona del sistema");
-
         return getresponseDTO("Persona actualizada correctamente", 200, request);
-
     }
 
     private ResponseDTO getresponseDTO(String message, int status, HttpServletRequest request) {
@@ -354,34 +391,60 @@ public class PersonaService {
         persona.setSegundo_nombre(personaData.getSegundoNombre());
         persona.setPrimer_apellido(personaData.getPrimerApellido());
         persona.setSegundo_apellido(personaData.getSegundoApellido());
-        // Descifrar numeroIdentificacion antes de devolverlo
+
         try {
             String numeroDescifrado = AESUtils.decrypt(personaData.getNumeroIdentificacion());
             persona.setNumero_identificacion(numeroDescifrado);
         } catch (Exception e) {
-
-         throw new RuntimeException("No se pudo descifrar el numero de identificacion");
-
+            throw new RuntimeException("No se pudo descifrar el numero de identificacion");
         }
-        persona.setLugar_votacion(personaData.getLugarVotacion());
+        Optional<PuestoVotacion> puestoVotacionOptional = puestoVotacionRepository.findById(personaData.getIdPuestoVotacion());
+        if(puestoVotacionOptional.isEmpty()){
+            throw new RuntimeException("El puesto de votacion no existe");
+        }
+        Optional<Mesa> mesaOptional = mesaRepository.findById(personaData.getId_mesa());
+        if(mesaOptional.isEmpty()){
+            throw new RuntimeException("La mesa especificada no existe");
+        }
+        persona.setMesa(mesaOptional.get().getNumeroMesa());
+        persona.setLugar_votacion(puestoVotacionOptional.get().getNombrePuesto());
+        persona.setId_mesa(mesaOptional.get().getIdMesa());
+        persona.setId_puesto_votacion(puestoVotacionOptional.get().getIdPuestoVotacion());
         persona.setTelefono(personaData.getTelefono());
         persona.setEstado_votacion(personaData.getEstadoVotacion());
-        Optional<Barrio> barrioOptional = barrioRepository.findById(personaData.getBarrio().getIdBarrio());
-        if (barrioOptional.isEmpty()) {
-            throw new RuntimeException("El barrio no existe");
-        }
-        Barrio barrio = barrioOptional.get();
-        persona.setBarrio_nombre(barrio.getNombreBarrio());
-        Optional<Usuario> liderOptional = usuarioRepository.findUsuarioByBarrio_IdBarrio(barrioOptional.get().getIdBarrio());
-        persona.setLider_nombre(barrioOptional.get().getUsuario().getNombre() + " " + barrioOptional.get().getUsuario().getApellido());
         persona.setImagen_url(
                 personaData.getUrlImagen() != null
                         ? "/api/v1/images/" + personaData.getUrlImagen()
                         : null
         );
         persona.setYear(personaData.getYear());
-        persona.setDepartamento(barrio.getCiudad().getDepartamento().getNombreDepartamento());
-        persona.setCiudad(barrio.getCiudad().getNombreCiudad());
+
+        // Incluir información del líder si existe
+        if(personaData.getUsuario() != null) {
+            persona.setId_lider(personaData.getUsuario().getIdUsuario());
+            persona.setNombre_lider(personaData.getUsuario().getNombre() + " " + personaData.getUsuario().getApellido());
+        }
+        if (personaData.getUsuario() != null) {
+
+            Ciudad ciudad = personaData.getUsuario().getCiudad();
+
+            if (ciudad != null) {
+                persona.setCiudad(ciudad.getNombreCiudad());
+
+                Departamento departamento = ciudad.getDepartamento();
+                if (departamento != null) {
+                    persona.setDepartamento(departamento.getNombreDepartamento());
+                } else {
+                    persona.setDepartamento(null);
+                }
+
+            } else {
+                persona.setCiudad(null);
+                persona.setDepartamento(null);
+            }
+        }
+
+
         return persona;
     }
 }

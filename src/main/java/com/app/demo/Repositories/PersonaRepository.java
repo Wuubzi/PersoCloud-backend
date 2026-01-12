@@ -16,15 +16,15 @@ import java.util.Optional;
 @Repository
 public interface PersonaRepository extends JpaRepository<Persona, Long>, JpaSpecificationExecutor<Persona> {
     int countAllByEstadoVotacion(Boolean estadoVotacion);
-    int countAllByBarrio_IdBarrioAndYear(Long idBarrio, Short year);
-    int countAllByBarrio_IdBarrioAndEstadoVotacionAndYear(Long idBarrio, Boolean estadoVotacion, Short year);
+    int countByUsuarioIdUsuarioAndYear(Long idLider, Short year);
+    int countByUsuarioIdUsuarioAndEstadoVotacionAndYear(Long idLider, Boolean estadoVotacion, Short year);
     Optional<Persona> findByNumeroIdentificacionHashAndYearAndIdPersonaNot(String numeroIdentificacionHash, Short year, Long idPersona);
     Optional<Persona> findByNumeroIdentificacionHashAndYear(String numeroIdentificacionHash, Short year);
-    List<Persona> findByFechaRegistroBetweenAndBarrio_IdBarrio(
+    int countByUsuarioIdUsuarioAndFechaRegistroBetween(
+            Long idLider,
             LocalDateTime inicio,
-            LocalDateTime fin,
-            Long idBarrio
+            LocalDateTime fin
     );
-    List<Persona> findAllByBarrio_IdBarrio(Long idBarrio);
+
 
 }

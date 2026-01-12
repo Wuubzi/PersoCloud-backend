@@ -28,7 +28,7 @@ public AuthController(AuthService authService) {
 
     @PostMapping("/loginLider")
     public ResponseEntity<AuthResponseDTO> loginLider(@Valid @RequestBody LoginRequestDTO data, HttpServletRequest request) {
-       return new ResponseEntity<>(authService.loginLider(data, request), HttpStatus.CREATED);
+       return new ResponseEntity<>(authService.loginApp(data, request), HttpStatus.CREATED);
     }
 
     @GetMapping("/hash")

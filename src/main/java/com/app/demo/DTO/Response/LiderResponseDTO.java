@@ -9,4 +9,8 @@ public class LiderResponseDTO {
     private String apellido;
     private String correo;
     private Boolean estado;
+    private Long id_ciudad;
+    private Long id_departamento;
+    private String departamento;
+    private String ciudad;
 }

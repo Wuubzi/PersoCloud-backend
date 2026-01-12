@@ -4,7 +4,6 @@ import com.app.demo.DTO.Response.CoordinadorResponseDTO;
 import com.app.demo.DTO.Response.StatsDashboardResponseDTO;
 import com.app.demo.DTO.Response.SummaryResponseDTO;
 import com.app.demo.Models.Usuario;
-import com.app.demo.Repositories.BarrioRepository;
 import com.app.demo.Repositories.PersonaRepository;
 import com.app.demo.Repositories.UsuarioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -15,12 +14,11 @@ import java.util.Optional;
 
 @Service
 public class CoordinadorService {
-    private final BarrioRepository barrioRepository;
+
     private final PersonaRepository personaRepository;
     private final UsuarioRepository usuarioRepository;
     @Autowired
-    public CoordinadorService(BarrioRepository barrioRepository, PersonaRepository personaRepository, UsuarioRepository usuarioRepository) {
-        this.barrioRepository = barrioRepository;
+    public CoordinadorService( PersonaRepository personaRepository, UsuarioRepository usuarioRepository) {
         this.personaRepository = personaRepository;
         this.usuarioRepository = usuarioRepository;
     }
@@ -38,11 +36,11 @@ public class CoordinadorService {
     }
 
     public StatsDashboardResponseDTO getStatsDashboard(){
-        int totalBarrios = barrioRepository.findAll().size();
+        int totalSubLideres = usuarioRepository.findAllByRol_NombreRol("SUBLÍDER").size();
         int totalPersonas = personaRepository.findAll().size();
         int totalLideres = usuarioRepository.findAllByRol_NombreRol("LÍDER").size();
         StatsDashboardResponseDTO stats = new StatsDashboardResponseDTO();
-        stats.setTotalBarrios(totalBarrios);
+        stats.setTotalSubLideres(totalSubLideres);
         stats.setTotalPersonas(totalPersonas);
         stats.setTotalLideres(totalLideres);
         return stats;

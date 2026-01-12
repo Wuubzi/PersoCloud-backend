@@ -4,6 +4,8 @@ package com.app.demo.Models;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.util.List;
+
 @Entity
 @Table(name = "usuarios")
 @Data
@@ -22,7 +24,19 @@ public class Usuario {
     @JoinColumn(name = "id_credencial")
     private Credencial credencial;
 
-    @OneToOne(mappedBy = "usuario")
-    private Barrio barrio;
+    @ManyToOne
+    @JoinColumn(name = "id_lider")
+    private Usuario lider;
+
+    @OneToMany(mappedBy = "lider")
+    private List<Usuario> sublideres;
+
+
+    @OneToMany(mappedBy = "usuario")
+    private java.util.List<Persona> personas;
+
+    @ManyToOne
+    @JoinColumn(name = "id_ciudad")
+    private Ciudad ciudad;
 
 }

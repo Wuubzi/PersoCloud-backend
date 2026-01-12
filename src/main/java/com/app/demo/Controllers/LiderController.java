@@ -51,8 +51,8 @@ public class LiderController {
     }
 
     @GetMapping("/getLider")
-    public ResponseEntity<LiderResponseDTO> getLider(@RequestParam String correoUsuario){
-        return new ResponseEntity<>(liderService.getLiderCorreo(correoUsuario), HttpStatus.OK);
+    public ResponseEntity<LiderResponseDTO> getLider(@RequestParam String correo){
+        return new ResponseEntity<>(liderService.getLiderCorreo(correo), HttpStatus.OK);
     }
 
     @PreAuthorize("hasRole('COORDINADOR')")

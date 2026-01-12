@@ -12,5 +12,8 @@ public class PersonaRequestDTO {
     private String telefono;
     private String lugar_votacion;
     private Boolean estado_votacion;
-    private Long id_barrio;
+    private Long id_puesto_votacion;
+    private Long id_mesa;
+    private Long id_lider;
+
 }

@@ -1,6 +1,7 @@
 INSERT INTO roles(nombre_rol) VALUES
                                   ('COORDINADOR'),
-                                  ('LÍDER');
+                                  ('LÍDER'),
+                                  ('SUBLÍDER');
 
 INSERT INTO modo_sistema(modo) VALUES (false);
 
@@ -45,18 +46,3 @@ INSERT INTO usuarios(nombre,apellido,estado,id_rol,id_credencial) VALUES
 INSERT INTO departamentos(nombre_departamento) VALUES ('Atlantico');
 
 INSERT INTO ciudades(nombre_ciudad, id_departamento) VALUES ('Soledad',1);
-INSERT INTO barrios(nombre_barrio, estado, id_usuario, id_ciudad) VALUES
-                                                         ('Villa Cristina',true,2, 1),
-                                                         ('Villa San Francisco',true,3, 1),
-                                                         ('Villa San Juan',true,4,1 ),
-                                                         ('El poblado', true, 5, 1),
-                                                         ('Villa Katanga', true, 6, 1),
-                                                         ('El Hipódromo', true, 7,1 ),
-                                                         ('Los robles', true, 8, 1),
-                                                         ('Nueva Esperanza', true, 9, 1),
-                                                         ('El Carmen', true, 10, 1),
-                                                         ('Soledad 2000', true, 11, 1),
-                                                         ('Las Margaritas', true, 12, 1),
-                                                         ('El Carmen', true, 13, 1),
-                                                         ('Las Colonias', true , 14, 1),
-                                                         ('Ciudad Camelot', true, 15, 1);

@@ -2,12 +2,9 @@ package com.app.demo.Services;
 
 import com.app.demo.DTO.Request.CiudadRequestDTO;
 import com.app.demo.DTO.Response.CiudadResponseDTO;
-import com.app.demo.DTO.Response.DepartamentoResponseDTO;
 import com.app.demo.DTO.Response.ResponseDTO;
-import com.app.demo.Models.Barrio;
 import com.app.demo.Models.Ciudad;
 import com.app.demo.Models.Departamento;
-import com.app.demo.Models.Persona;
 import com.app.demo.Repositories.CiudadRepository;
 import com.app.demo.Repositories.DepartamentoRepository;
 import com.app.demo.Utils.DateFormat;
@@ -68,6 +65,10 @@ public class CiudadService {
 
     public CiudadResponseDTO getCiudad(Long idCiudad) {
         return mapToDTO(ciudadRepository.findById(idCiudad).orElseThrow());
+    }
+
+    public List<CiudadResponseDTO> getCiudadesByDepartamento(Long idDepartamento ) {
+       return ciudadRepository.findAllByDepartamento_IdDepartamento(idDepartamento).stream().map(this::mapToDTO).toList();
     }
 
     public ResponseDTO crearCiudad(CiudadRequestDTO data, HttpServletRequest request) {
