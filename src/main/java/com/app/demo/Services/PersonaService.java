@@ -176,7 +176,7 @@ public class PersonaService {
         return personas.map(this::mapToDTO);
     }
 
-    public Page<PersonaResponseDTO> getPersonasLider(Long idLider, int page, int size, String search, Boolean estado_votacion){
+    public Page<PersonaResponseDTO> getPersonasLider(Long idLider, int page, int size, String search, Boolean estado_votacion, Long usuarioRegistro){
         Pageable pageable = PageRequest.of(page, size);
         Specification<Persona> spec = (root, query, cb) -> cb.conjunction();
 
@@ -212,6 +212,12 @@ public class PersonaService {
                         cb.like(cb.lower(root.get("telefono")), like)
                 );
             });
+        }
+
+        if (usuarioRegistro != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("idUsuarioRegistro"), usuarioRegistro)
+            );
         }
 
         if(estado_votacion != null){

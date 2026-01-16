@@ -56,10 +56,11 @@ public class PersonaController {
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) Boolean estado_votacion
+            @RequestParam(required = false) Boolean estado_votacion,
+            @RequestParam(required = false) Long usuarioRegistro
     )
     {
-        return new ResponseEntity<>(personaService.getPersonasLider(idLider,page,size,search,estado_votacion), HttpStatus.OK);
+        return new ResponseEntity<>(personaService.getPersonasLider(idLider,page,size,search,estado_votacion,usuarioRegistro), HttpStatus.OK);
     }
 
     @GetMapping("/personasExport")

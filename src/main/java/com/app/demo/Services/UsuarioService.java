@@ -6,7 +6,9 @@ import com.app.demo.Repositories.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UsuarioService {
@@ -18,8 +20,23 @@ public class UsuarioService {
         this.usuarioRepository = usuarioRepository;
     }
 
-    public List<UsuariosResponseDTO> getUsuarios(){
-        return usuarioRepository.findAllByRol_NombreRolOrRol_NombreRol("LÍDER", "SUBLÍDER").stream().map(this::mapToDTO).toList();
+    public List<UsuariosResponseDTO> getUsuarios(Long idLider){
+        List<Usuario> resultado = new ArrayList<>();
+
+        Optional<Usuario> lider = usuarioRepository.findById(idLider);
+        if (lider.isEmpty()) {
+            throw new RuntimeException("Este usuario no existe");
+        }
+        resultado.add(lider.get());
+
+
+
+        List<Usuario> sublideres = usuarioRepository.findAllByLider_IdUsuario(idLider);
+        resultado.addAll(sublideres);
+
+        return resultado.stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
     private UsuariosResponseDTO mapToDTO(Usuario usuario){

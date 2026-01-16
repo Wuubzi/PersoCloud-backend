@@ -22,6 +22,8 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long>, JpaSpec
             String correo,
             List<String> roles
     );
+    List<Usuario> findAllByLider_IdUsuario(Long idUsuario);
+
 
 
 }
