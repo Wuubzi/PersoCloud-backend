@@ -22,5 +22,7 @@ public class PersonaResponseDTO {
     private String departamento;
     private String ciudad;
     private String imagen_url;
+    private String fecha;
+    private String usuario_registro;
     private Short year;
 }

@@ -51,6 +51,7 @@ CREATE TABLE personas
     imagen_url                 VARCHAR(255),
     year                       SMALLINT NOT NULL,
     numero_identificacion_hash VARCHAR(255),
+    id_usuario_registro        BIGINT,
     id_lider                   BIGINT
 );
 

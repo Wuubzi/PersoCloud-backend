@@ -54,7 +54,7 @@ public class PersonaService {
         this.auditoriaService = auditoriaService;
     }
 
-    public Page<PersonaResponseDTO> getPersonas(int page, int size, String search, Short year, Boolean estado_votacion, Long idLider, Long departamento, Long idCiudad, Long PuestoVotacion, Long mesa){
+    public Page<PersonaResponseDTO> getPersonas(int page, int size, String search, Short year, Boolean estado_votacion, Long idLider, Long departamento, Long idCiudad, Long PuestoVotacion, Long mesa, Long usuarioRegistro){
         Pageable pageable = PageRequest.of(page, size);
         Specification<Persona> spec = (root, query, cb) -> cb.conjunction();
 
@@ -139,6 +139,12 @@ public class PersonaService {
         if (mesa != null) {
             spec = spec.and((root, query, cb) ->
                     cb.equal(root.get("id_mesa"), mesa)
+            );
+        }
+
+        if (usuarioRegistro != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.equal(root.get("idUsuarioRegistro"), usuarioRegistro)
             );
         }
 
@@ -300,6 +306,15 @@ public class PersonaService {
             }
         }
 
+        Optional<Usuario> liderOrSubliderOptional =
+                usuarioRepository.findByCredencial_CorreoAndRol_NombreRolIn(
+                        correo, List.of("LÍDER", "SUBLÍDER")
+                );
+
+        if(liderOrSubliderOptional.isEmpty()) {
+           throw new RuntimeException("Este usuario no existe");
+        }
+
         Persona persona = new Persona();
         persona.setPrimerNombre(data.getPrimer_nombre());
         persona.setSegundoNombre(data.getSegundo_nombre());
@@ -311,6 +326,8 @@ public class PersonaService {
         persona.setId_mesa(mesaOptional.get().getIdMesa());
         persona.setEstadoVotacion(data.getEstado_votacion());
         persona.setTelefono(data.getTelefono());
+        persona.setIdUsuarioRegistro(liderOrSubliderOptional.get().getIdUsuario());
+        persona.setFechaRegistro(LocalDateTime.now());
         persona.setYear(anioActual);
 
         if(data.getId_lider() != null) {
@@ -412,6 +429,9 @@ public class PersonaService {
         persona.setId_puesto_votacion(puestoVotacionOptional.get().getIdPuestoVotacion());
         persona.setTelefono(personaData.getTelefono());
         persona.setEstado_votacion(personaData.getEstadoVotacion());
+        persona.setFecha(personaData.getFechaRegistro().toString());
+        Optional<Usuario> usuarioOptional = usuarioRepository.findById(personaData.getIdUsuarioRegistro());
+        persona.setUsuario_registro(usuarioOptional.get().getNombre() + " " + usuarioOptional.get().getApellido());
         persona.setImagen_url(
                 personaData.getUrlImagen() != null
                         ? "/api/v1/images/" + personaData.getUrlImagen()

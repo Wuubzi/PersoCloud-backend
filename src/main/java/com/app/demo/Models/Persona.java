@@ -37,6 +37,8 @@ public class Persona {
     private Long id_mesa;
     @Column(name = "numero_identificacion_hash")
     private String numeroIdentificacionHash;
+    @Column(name = "id_usuario_registro")
+    private Long  idUsuarioRegistro;
     @ManyToOne
     @JoinColumn(name = "id_usuario", nullable = false)
     private Usuario usuario;

@@ -44,9 +44,10 @@ public class PersonaController {
             @RequestParam(required = false) Long departamento,
             @RequestParam(required = false) Long ciudad,
             @RequestParam(required = false) Long PuestoVotacion,
+            @RequestParam(required = false) Long usuarioRegistro,
             @RequestParam(required = false) Long Mesa
     ){
-        return new ResponseEntity<>(personaService.getPersonas(page,size,search,year,estado_votacion, lider, departamento,ciudad, PuestoVotacion, Mesa), HttpStatus.OK);
+        return new ResponseEntity<>(personaService.getPersonas(page,size,search,year,estado_votacion, lider, departamento,ciudad, PuestoVotacion, Mesa, usuarioRegistro), HttpStatus.OK);
     }
 
     @GetMapping("/personasLider")
